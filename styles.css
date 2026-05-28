@@ -212,3 +212,15 @@ button {
     margin: 0 auto;
   }
 }
+.auth-panel {
+  margin-top: 20px;
+}
+
+.hidden {
+  display: none;
+}
+
+#userInfo {
+  margin-top: 10px;
+  font-weight: bold;
+}

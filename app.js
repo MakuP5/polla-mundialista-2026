@@ -1,4 +1,64 @@
+import { auth, provider, db } from "./firebase-config.js";
+
+import {
+  signInWithPopup,
+  signOut,
+  onAuthStateChanged
+} from "https://www.gstatic.com/firebasejs/12.13.0/firebase-auth.js";
+
+import {
+  doc,
+  setDoc,
+  getDoc,
+  serverTimestamp
+} from "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js";
+
 const partidosContainer = document.getElementById("partidosContainer");
+const btnLogin = document.getElementById("btnLogin");
+const btnLogout = document.getElementById("btnLogout");
+const userInfo = document.getElementById("userInfo");
+
+let usuarioActual = null;
+let partidosGlobales = [];
+
+btnLogin.addEventListener("click", async () => {
+  try {
+    await signInWithPopup(auth, provider);
+  } catch (error) {
+    console.error("Error al iniciar sesión:", error);
+    alert("No se pudo iniciar sesión con Google.");
+  }
+});
+
+btnLogout.addEventListener("click", async () => {
+  try {
+    await signOut(auth);
+  } catch (error) {
+    console.error("Error al cerrar sesión:", error);
+  }
+});
+
+onAuthStateChanged(auth, async (user) => {
+  if (user) {
+    usuarioActual = user;
+
+    btnLogin.classList.add("hidden");
+    btnLogout.classList.remove("hidden");
+    userInfo.textContent = `Sesión iniciada como: ${user.displayName}`;
+
+    await registrarUsuario(user);
+    await cargarPartidos();
+
+  } else {
+    usuarioActual = null;
+
+    btnLogin.classList.remove("hidden");
+    btnLogout.classList.add("hidden");
+    userInfo.textContent = "No has iniciado sesión.";
+
+    await cargarPartidos();
+  }
+});
 
 async function cargarPartidos() {
   try {
@@ -10,6 +70,8 @@ async function cargarPartidos() {
     }
 
     const partidos = await respuesta.json();
+
+    partidosGlobales = partidos;
 
     partidosContainer.innerHTML = "";
 
@@ -70,9 +132,9 @@ async function cargarPartidos() {
             placeholder="0"
           >
 
-          <button onclick="guardarPrediccionTemporal('${partido.id}')">
-            Guardar
-          </button>
+            <button onclick="guardarPrediccion('${partido.id}')">
+                Guardar
+            </button>
         </div>
       `;
 
@@ -237,7 +299,12 @@ function formatearFecha(fechaTexto) {
   });
 }
 
-function guardarPrediccionTemporal(partidoId) {
+window.guardarPrediccion = async function(partidoId) {
+  if (!usuarioActual) {
+    alert("Primero debes iniciar sesión con Google.");
+    return;
+  }
+
   const golesLocal = document.getElementById(`local-${partidoId}`).value;
   const golesVisitante = document.getElementById(`visitante-${partidoId}`).value;
 
@@ -246,13 +313,57 @@ function guardarPrediccionTemporal(partidoId) {
     return;
   }
 
-  console.log("Predicción temporal:", {
-    partidoId,
-    golesLocal: Number(golesLocal),
-    golesVisitante: Number(golesVisitante)
-  });
+  const partido = partidosGlobales.find((p) => p.id === partidoId);
 
-  alert("Predicción registrada temporalmente. Luego la guardaremos en Firebase.");
+  if (!partido) {
+    alert("No se encontró el partido.");
+    return;
+  }
+
+  const prediccionId = `${usuarioActual.uid}_${partidoId}`;
+
+  try {
+    await setDoc(doc(db, "predicciones", prediccionId), {
+      userId: usuarioActual.uid,
+      userName: usuarioActual.displayName,
+      userEmail: usuarioActual.email,
+      partidoId: partido.id,
+      numero: partido.numero,
+      fase: partido.fase,
+      grupo: partido.grupo || null,
+      equipoLocal: partido.equipoLocal,
+      equipoVisitante: partido.equipoVisitante,
+      golesLocal: Number(golesLocal),
+      golesVisitante: Number(golesVisitante),
+      puntos: 0,
+      estadoPuntuacion: "pendiente",
+      fechaRegistro: serverTimestamp(),
+      fechaActualizacion: serverTimestamp()
+    });
+
+    alert("Predicción guardada correctamente en Firebase.");
+
+  } catch (error) {
+    console.error("Error guardando predicción:", error);
+    alert("No se pudo guardar la predicción.");
+  }
+};
+
+async function registrarUsuario(user) {
+  const userRef = doc(db, "usuarios", user.uid);
+  const userSnap = await getDoc(userRef);
+
+  if (!userSnap.exists()) {
+    await setDoc(userRef, {
+      nombre: user.displayName,
+      email: user.email,
+      rol: "participante",
+      puntosTotales: 0,
+      aciertosExactos: 0,
+      aciertosResultado: 0,
+      fechaRegistro: serverTimestamp()
+    });
+  }
 }
 
-cargarPartidos();
+//cargarPartidos();
