@@ -1,0 +1,68 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: Arial, Helvetica, sans-serif;
+  background: #07111f;
+  color: #ffffff;
+}
+
+.hero {
+  padding: 40px 20px;
+  text-align: center;
+  background: linear-gradient(135deg, #06283d, #1363df, #47b5ff);
+}
+
+.hero h1 {
+  margin: 0;
+  font-size: 2.4rem;
+}
+
+.container {
+  width: min(1100px, 94%);
+  margin: 30px auto;
+  display: grid;
+  gap: 24px;
+}
+
+.card {
+  background: #101d2e;
+  border: 1px solid #1f3b5b;
+  border-radius: 16px;
+  padding: 24px;
+}
+
+.partido {
+  background: #0b1626;
+  border: 1px solid #24496e;
+  border-radius: 12px;
+  padding: 18px;
+  margin-bottom: 16px;
+}
+
+.prediccion {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-top: 12px;
+}
+
+.prediccion input {
+  width: 70px;
+  padding: 8px;
+  border-radius: 8px;
+  border: none;
+  text-align: center;
+}
+
+button {
+  padding: 9px 14px;
+  border: none;
+  border-radius: 8px;
+  background: #ffd166;
+  color: #111;
+  font-weight: bold;
+  cursor: pointer;
+}
