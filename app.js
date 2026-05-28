@@ -17,37 +17,41 @@ async function cargarPartidos() {
       const div = document.createElement("div");
       div.className = "partido";
 
+      const local = obtenerSeleccion(partido.equipoLocal);
+      const visitante = obtenerSeleccion(partido.equipoVisitante);
+
       const grupoTexto = partido.grupo
         ? `<p><strong>Grupo:</strong> ${partido.grupo}</p>`
         : "";
 
-      const banderaLocal = obtenerBandera(partido.equipoLocal);
-      const banderaVisitante = obtenerBandera(partido.equipoVisitante);
-
       div.innerHTML = `
-        <h3>Partido ${partido.numero}</h3>
+        <div class="partido-header">
+          <span class="numero-partido">Partido ${partido.numero}</span>
+          <span class="fase-partido">${traducirFase(partido.fase)}</span>
+        </div>
 
         <div class="equipos">
           <div class="equipo">
-            <span class="bandera">${banderaLocal}</span>
-            <span class="nombre-equipo">${partido.equipoLocal}</span>
+            ${crearBandera(local)}
+            <span class="nombre-equipo">${local.nombre}</span>
           </div>
 
           <div class="versus">VS</div>
 
           <div class="equipo">
-            <span class="bandera">${banderaVisitante}</span>
-            <span class="nombre-equipo">${partido.equipoVisitante}</span>
+            ${crearBandera(visitante)}
+            <span class="nombre-equipo">${visitante.nombre}</span>
           </div>
         </div>
 
-        <p><strong>Fase:</strong> ${partido.fase}</p>
-        ${grupoTexto}
-        <p><strong>Fecha:</strong> ${formatearFecha(partido.fecha)}</p>
-        <p><strong>Hora local:</strong> ${partido.horaLocal}</p>
-        <p><strong>Hora ET:</strong> ${partido.horaET}</p>
-        <p><strong>Sede:</strong> ${partido.sede}</p>
-        <p><strong>Ciudad:</strong> ${partido.ciudad}</p>
+        <div class="datos-partido">
+          ${grupoTexto}
+          <p><strong>Fecha:</strong> ${formatearFecha(partido.fecha)}</p>
+          <p><strong>Hora local:</strong> ${partido.horaLocal}</p>
+          <p><strong>Hora ET:</strong> ${partido.horaET}</p>
+          <p><strong>Sede:</strong> ${partido.sede}</p>
+          <p><strong>Ciudad:</strong> ${traducirCiudad(partido.ciudad)}</p>
+        </div>
 
         <div class="prediccion">
           <input 
@@ -84,6 +88,139 @@ async function cargarPartidos() {
   }
 }
 
+function obtenerSeleccion(nombreOriginal) {
+  const selecciones = {
+    "Algeria": { nombre: "Argelia", codigo: "dz" },
+    "Argentina": { nombre: "Argentina", codigo: "ar" },
+    "Australia": { nombre: "Australia", codigo: "au" },
+    "Austria": { nombre: "Austria", codigo: "at" },
+    "Belgium": { nombre: "Bélgica", codigo: "be" },
+    "Bosnia and Herzegovina": { nombre: "Bosnia y Herzegovina", codigo: "ba" },
+    "Brazil": { nombre: "Brasil", codigo: "br" },
+    "Canada": { nombre: "Canadá", codigo: "ca" },
+    "Cape Verde": { nombre: "Cabo Verde", codigo: "cv" },
+    "Colombia": { nombre: "Colombia", codigo: "co" },
+    "Congo DR": { nombre: "República Democrática del Congo", codigo: "cd" },
+    "Croatia": { nombre: "Croacia", codigo: "hr" },
+    "Curaçao": { nombre: "Curazao", codigo: "cw" },
+    "Czechia": { nombre: "Chequia", codigo: "cz" },
+    "Ecuador": { nombre: "Ecuador", codigo: "ec" },
+    "Egypt": { nombre: "Egipto", codigo: "eg" },
+    "England": { nombre: "Inglaterra", codigo: "gb-eng" },
+    "France": { nombre: "Francia", codigo: "fr" },
+    "Germany": { nombre: "Alemania", codigo: "de" },
+    "Ghana": { nombre: "Ghana", codigo: "gh" },
+    "Haiti": { nombre: "Haití", codigo: "ht" },
+    "Iran": { nombre: "Irán", codigo: "ir" },
+    "Iraq": { nombre: "Irak", codigo: "iq" },
+    "Ivory Coast": { nombre: "Costa de Marfil", codigo: "ci" },
+    "Japan": { nombre: "Japón", codigo: "jp" },
+    "Jordan": { nombre: "Jordania", codigo: "jo" },
+    "Mexico": { nombre: "México", codigo: "mx" },
+    "Morocco": { nombre: "Marruecos", codigo: "ma" },
+    "Netherlands": { nombre: "Países Bajos", codigo: "nl" },
+    "New Zealand": { nombre: "Nueva Zelanda", codigo: "nz" },
+    "Norway": { nombre: "Noruega", codigo: "no" },
+    "Panama": { nombre: "Panamá", codigo: "pa" },
+    "Paraguay": { nombre: "Paraguay", codigo: "py" },
+    "Portugal": { nombre: "Portugal", codigo: "pt" },
+    "Qatar": { nombre: "Catar", codigo: "qa" },
+    "Saudi Arabia": { nombre: "Arabia Saudita", codigo: "sa" },
+    "Scotland": { nombre: "Escocia", codigo: "gb-sct" },
+    "Senegal": { nombre: "Senegal", codigo: "sn" },
+    "South Africa": { nombre: "Sudáfrica", codigo: "za" },
+    "South Korea": { nombre: "Corea del Sur", codigo: "kr" },
+    "Spain": { nombre: "España", codigo: "es" },
+    "Sweden": { nombre: "Suecia", codigo: "se" },
+    "Switzerland": { nombre: "Suiza", codigo: "ch" },
+    "Tunisia": { nombre: "Túnez", codigo: "tn" },
+    "Türkiye": { nombre: "Turquía", codigo: "tr" },
+    "USA": { nombre: "Estados Unidos", codigo: "us" },
+    "United States": { nombre: "Estados Unidos", codigo: "us" },
+    "Uruguay": { nombre: "Uruguay", codigo: "uy" },
+    "Uzbekistan": { nombre: "Uzbekistán", codigo: "uz" }
+  };
+
+  if (selecciones[nombreOriginal]) {
+    return selecciones[nombreOriginal];
+  }
+
+  return {
+    nombre: traducirPlaceholder(nombreOriginal),
+    codigo: null
+  };
+}
+
+function crearBandera(seleccion) {
+  if (!seleccion.codigo) {
+    return `<span class="bandera-placeholder">⚽</span>`;
+  }
+
+  return `
+    <img 
+      class="bandera-img" 
+      src="https://flagcdn.com/${seleccion.codigo}.svg" 
+      alt="Bandera de ${seleccion.nombre}"
+      loading="lazy"
+    >
+  `;
+}
+
+function traducirPlaceholder(texto) {
+  if (!texto) return "Por definir";
+
+  let traducido = texto;
+
+  traducido = traducido.replace(/Group ([A-L]) Winners/g, "Ganador Grupo $1");
+  traducido = traducido.replace(/Group ([A-L]) Runners Up/g, "Segundo Grupo $1");
+  traducido = traducido.replace(/Group ([A-L])\/([A-L])\/([A-L])\/([A-L])\/([A-L]) 3rd Place/g, "Mejor tercero Grupos $1/$2/$3/$4/$5");
+  traducido = traducido.replace(/Group ([A-L])\/([A-L])\/([A-L])\/([A-L]) 3rd Place/g, "Mejor tercero Grupos $1/$2/$3/$4");
+  traducido = traducido.replace(/Match ([0-9]+) Winner/g, "Ganador partido $1");
+  traducido = traducido.replace(/Match ([0-9]+) Loser/g, "Perdedor partido $1");
+
+  return traducido;
+}
+
+function traducirFase(fase) {
+  const fases = {
+    "Fase de grupos": "Fase de grupos",
+    "Group Stage": "Fase de grupos",
+    "Round of 32": "Dieciseisavos de final",
+    "Round of 16": "Octavos de final",
+    "Quarter-finals": "Cuartos de final",
+    "Quarterfinals": "Cuartos de final",
+    "Semi-finals": "Semifinales",
+    "Semifinals": "Semifinales",
+    "Third-place match": "Partido por el tercer lugar",
+    "Final": "Final"
+  };
+
+  return fases[fase] || fase;
+}
+
+function traducirCiudad(ciudad) {
+  const ciudades = {
+    "Mexico City": "Ciudad de México",
+    "Guadalajara": "Guadalajara",
+    "Monterrey": "Monterrey",
+    "Toronto": "Toronto",
+    "Vancouver": "Vancouver",
+    "Los Angeles": "Los Ángeles",
+    "San Francisco Bay Area": "Área de la Bahía de San Francisco",
+    "Seattle": "Seattle",
+    "Dallas": "Dallas",
+    "Houston": "Houston",
+    "Kansas City": "Kansas City",
+    "Atlanta": "Atlanta",
+    "Miami": "Miami",
+    "Boston": "Boston",
+    "New York/New Jersey": "Nueva York / Nueva Jersey",
+    "Philadelphia": "Filadelfia"
+  };
+
+  return ciudades[ciudad] || ciudad;
+}
+
 function formatearFecha(fechaTexto) {
   const partes = fechaTexto.split("-");
   const anio = Number(partes[0]);
@@ -116,75 +253,6 @@ function guardarPrediccionTemporal(partidoId) {
   });
 
   alert("Predicción registrada temporalmente. Luego la guardaremos en Firebase.");
-}
-
-function obtenerBandera(pais) {
-  const banderas = {
-    "Mexico": "🇲🇽",
-    "South Africa": "🇿🇦",
-    "Argentina": "🇦🇷",
-    "Brazil": "🇧🇷",
-    "Ecuador": "🇪🇨",
-    "United States": "🇺🇸",
-    "Canada": "🇨🇦",
-    "Costa Rica": "🇨🇷",
-    "Japan": "🇯🇵",
-    "Korea Republic": "🇰🇷",
-    "South Korea": "🇰🇷",
-    "Australia": "🇦🇺",
-    "Iran": "🇮🇷",
-    "Saudi Arabia": "🇸🇦",
-    "Qatar": "🇶🇦",
-    "Morocco": "🇲🇦",
-    "Tunisia": "🇹🇳",
-    "Egypt": "🇪🇬",
-    "Senegal": "🇸🇳",
-    "Ghana": "🇬🇭",
-    "Nigeria": "🇳🇬",
-    "Cameroon": "🇨🇲",
-    "Algeria": "🇩🇿",
-    "Ivory Coast": "🇨🇮",
-    "Côte d'Ivoire": "🇨🇮",
-    "Germany": "🇩🇪",
-    "France": "🇫🇷",
-    "Spain": "🇪🇸",
-    "England": "🏴",
-    "Portugal": "🇵🇹",
-    "Netherlands": "🇳🇱",
-    "Belgium": "🇧🇪",
-    "Croatia": "🇭🇷",
-    "Switzerland": "🇨🇭",
-    "Denmark": "🇩🇰",
-    "Poland": "🇵🇱",
-    "Serbia": "🇷🇸",
-    "Ukraine": "🇺🇦",
-    "Austria": "🇦🇹",
-    "Sweden": "🇸🇪",
-    "Norway": "🇳🇴",
-    "Italy": "🇮🇹",
-    "Turkey": "🇹🇷",
-    "Wales": "🏴",
-    "Scotland": "🏴",
-    "Uruguay": "🇺🇾",
-    "Colombia": "🇨🇴",
-    "Chile": "🇨🇱",
-    "Peru": "🇵🇪",
-    "Paraguay": "🇵🇾",
-    "Venezuela": "🇻🇪",
-    "Bolivia": "🇧🇴",
-    "New Zealand": "🇳🇿",
-    "Jamaica": "🇯🇲",
-    "Panama": "🇵🇦",
-    "Honduras": "🇭🇳",
-    "El Salvador": "🇸🇻",
-    "Guatemala": "🇬🇹",
-    "China": "🇨🇳",
-    "Iraq": "🇮🇶",
-    "United Arab Emirates": "🇦🇪",
-    "Russia": "🇷🇺"
-  };
-
-  return banderas[pais] || "🏳️";
 }
 
 cargarPartidos();
