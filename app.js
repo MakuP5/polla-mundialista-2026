@@ -10,6 +10,10 @@ import {
   doc,
   setDoc,
   getDoc,
+  collection,
+  query,
+  where,
+  getDocs,
   serverTimestamp
 } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js";
 
@@ -20,6 +24,7 @@ const userInfo = document.getElementById("userInfo");
 
 let usuarioActual = null;
 let partidosGlobales = [];
+let prediccionesUsuario = {};
 
 btnLogin.addEventListener("click", async () => {
   try {
@@ -72,74 +77,88 @@ async function cargarPartidos() {
     const partidos = await respuesta.json();
 
     partidosGlobales = partidos;
+    await cargarPrediccionesUsuario();
 
     partidosContainer.innerHTML = "";
 
     partidos.forEach((partido) => {
-      const div = document.createElement("div");
-      div.className = "partido";
+  const div = document.createElement("div");
+  div.className = "partido";
 
-      const local = obtenerSeleccion(partido.equipoLocal);
-      const visitante = obtenerSeleccion(partido.equipoVisitante);
+  const local = obtenerSeleccion(partido.equipoLocal);
+  const visitante = obtenerSeleccion(partido.equipoVisitante);
 
-      const grupoTexto = partido.grupo
-        ? `<p><strong>Grupo:</strong> ${partido.grupo}</p>`
-        : "";
+  const prediccionGuardada = prediccionesUsuario[partido.id];
 
-      div.innerHTML = `
-        <div class="partido-header">
-          <span class="numero-partido">Partido ${partido.numero}</span>
-          <span class="fase-partido">${traducirFase(partido.fase)}</span>
-        </div>
+  const valorLocal = prediccionGuardada ? prediccionGuardada.golesLocal : "";
+  const valorVisitante = prediccionGuardada ? prediccionGuardada.golesVisitante : "";
 
-        <div class="equipos">
-          <div class="equipo">
-            ${crearBandera(local)}
-            <span class="nombre-equipo">${local.nombre}</span>
-          </div>
+  const estadoGuardado = prediccionGuardada
+    ? `<span class="estado-guardado">Guardado</span>`
+    : `<span class="estado-pendiente">Sin guardar</span>`;
 
-          <div class="versus">VS</div>
+  const grupoTexto = partido.grupo
+    ? `<p><strong>Grupo:</strong> ${partido.grupo}</p>`
+    : "";
 
-          <div class="equipo">
-            ${crearBandera(visitante)}
-            <span class="nombre-equipo">${visitante.nombre}</span>
-          </div>
-        </div>
+  div.innerHTML = `
+    <div class="partido-header">
+      <span class="numero-partido">Partido ${partido.numero}</span>
+      <span class="fase-partido">${traducirFase(partido.fase)}</span>
+    </div>
 
-        <div class="datos-partido">
-          ${grupoTexto}
-          <p><strong>Fecha:</strong> ${formatearFecha(partido.fecha)}</p>
-          <p><strong>Hora local:</strong> ${partido.horaLocal}</p>
-          <p><strong>Hora ET:</strong> ${partido.horaET}</p>
-          <p><strong>Sede:</strong> ${partido.sede}</p>
-          <p><strong>Ciudad:</strong> ${traducirCiudad(partido.ciudad)}</p>
-        </div>
+    <div class="equipos">
+      <div class="equipo">
+        ${crearBandera(local)}
+        <span class="nombre-equipo">${local.nombre}</span>
+      </div>
 
-        <div class="prediccion">
-          <input 
-            type="number" 
-            min="0" 
-            id="local-${partido.id}" 
-            placeholder="0"
-          >
+      <div class="versus">VS</div>
 
-          <span>-</span>
+      <div class="equipo">
+        ${crearBandera(visitante)}
+        <span class="nombre-equipo">${visitante.nombre}</span>
+      </div>
+    </div>
 
-          <input 
-            type="number" 
-            min="0" 
-            id="visitante-${partido.id}" 
-            placeholder="0"
-          >
+    <div class="datos-partido">
+      ${grupoTexto}
+      <p><strong>Fecha:</strong> ${formatearFecha(partido.fecha)}</p>
+      <p><strong>Hora local:</strong> ${partido.horaLocal}</p>
+      <p><strong>Hora ET:</strong> ${partido.horaET}</p>
+      <p><strong>Sede:</strong> ${partido.sede}</p>
+      <p><strong>Ciudad:</strong> ${traducirCiudad(partido.ciudad)}</p>
+    </div>
 
-            <button onclick="guardarPrediccion('${partido.id}')">
-                Guardar
-            </button>
-        </div>
-      `;
+    <div class="prediccion">
+      <input 
+        type="number" 
+        min="0" 
+        id="local-${partido.id}" 
+        placeholder="0"
+        value="${valorLocal}"
+      >
 
-      partidosContainer.appendChild(div);
-    });
+      <span>-</span>
+
+      <input 
+        type="number" 
+        min="0" 
+        id="visitante-${partido.id}" 
+        placeholder="0"
+        value="${valorVisitante}"
+      >
+
+      <button onclick="guardarPrediccion('${partido.id}')">
+        Guardar
+      </button>
+
+      ${estadoGuardado}
+    </div>
+  `;
+
+  partidosContainer.appendChild(div);
+});
 
   } catch (error) {
     console.error("Error cargando partidos:", error);
@@ -341,6 +360,13 @@ window.guardarPrediccion = async function(partidoId) {
       fechaActualizacion: serverTimestamp()
     });
 
+    prediccionesUsuario[partidoId] = {
+    golesLocal: Number(golesLocal),
+    golesVisitante: Number(golesVisitante),
+    puntos: 0,
+    estadoPuntuacion: "pendiente"
+    };
+
     alert("Predicción guardada correctamente en Firebase.");
 
   } catch (error) {
@@ -366,4 +392,38 @@ async function registrarUsuario(user) {
   }
 }
 
+async function cargarPrediccionesUsuario() {
+  prediccionesUsuario = {};
+
+  if (!usuarioActual) {
+    return;
+  }
+
+  try {
+    const prediccionesRef = collection(db, "predicciones");
+
+    const q = query(
+      prediccionesRef,
+      where("userId", "==", usuarioActual.uid)
+    );
+
+    const querySnapshot = await getDocs(q);
+
+    querySnapshot.forEach((documento) => {
+      const prediccion = documento.data();
+
+      prediccionesUsuario[prediccion.partidoId] = {
+        golesLocal: prediccion.golesLocal,
+        golesVisitante: prediccion.golesVisitante,
+        puntos: prediccion.puntos,
+        estadoPuntuacion: prediccion.estadoPuntuacion
+      };
+    });
+
+    console.log("Predicciones cargadas:", prediccionesUsuario);
+
+  } catch (error) {
+    console.error("Error cargando predicciones del usuario:", error);
+  }
+}
 //cargarPartidos();

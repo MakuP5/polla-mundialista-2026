@@ -224,3 +224,21 @@ button {
   margin-top: 10px;
   font-weight: bold;
 }
+
+.estado-guardado {
+  background: #2ecc71;
+  color: #06120b;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: bold;
+}
+
+.estado-pendiente {
+  background: #34495e;
+  color: #dbeafe;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: bold;
+}
