@@ -66,3 +66,40 @@ button {
   font-weight: bold;
   cursor: pointer;
 }
+
+.equipos {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 12px;
+  padding: 16px;
+  margin: 16px 0;
+  flex-wrap: wrap;
+}
+
+.equipo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 1.1rem;
+  font-weight: bold;
+}
+
+.bandera {
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.nombre-equipo {
+  font-size: 1rem;
+}
+
+.versus {
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: #ffd166;
+  text-align: center;
+}
