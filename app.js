@@ -17,10 +17,32 @@ import {
   serverTimestamp
 } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js";
 
-const partidosContainer = document.getElementById("partidosContainer");
+
+
+const gruposContainer = document.getElementById("gruposContainer");
+const bracketContainer = document.getElementById("bracketContainer");
+const misPrediccionesContainer = document.getElementById("misPrediccionesContainer");
+const rankingContainer = document.getElementById("rankingContainer");
+
 const btnLogin = document.getElementById("btnLogin");
 const btnLogout = document.getElementById("btnLogout");
 const userInfo = document.getElementById("userInfo");
+
+const botonesTabs = document.querySelectorAll(".tab-btn");
+const contenidosTabs = document.querySelectorAll(".tab-content");
+
+botonesTabs.forEach((boton) => {
+  boton.addEventListener("click", () => {
+    const tabId = boton.dataset.tab;
+
+    botonesTabs.forEach((btn) => btn.classList.remove("active"));
+    contenidosTabs.forEach((contenido) => contenido.classList.remove("active"));
+
+    boton.classList.add("active");
+    document.getElementById(tabId).classList.add("active");
+  });
+});  
+
 
 let usuarioActual = null;
 let partidosGlobales = [];
@@ -75,96 +97,27 @@ async function cargarPartidos() {
     }
 
     const partidos = await respuesta.json();
-
     partidosGlobales = partidos;
+
     await cargarPrediccionesUsuario();
 
-    partidosContainer.innerHTML = "";
+    const partidosGrupos = partidos.filter(esFaseDeGrupos);
+    const partidosEliminacion = partidos.filter((partido) => !esFaseDeGrupos(partido));
 
-    partidos.forEach((partido) => {
-  const div = document.createElement("div");
-  div.className = "partido";
-
-  const local = obtenerSeleccion(partido.equipoLocal);
-  const visitante = obtenerSeleccion(partido.equipoVisitante);
-
-  const prediccionGuardada = prediccionesUsuario[partido.id];
-
-  const valorLocal = prediccionGuardada ? prediccionGuardada.golesLocal : "";
-  const valorVisitante = prediccionGuardada ? prediccionGuardada.golesVisitante : "";
-
-  const estadoGuardado = prediccionGuardada
-    ? `<span class="estado-guardado">Guardado</span>`
-    : `<span class="estado-pendiente">Sin guardar</span>`;
-
-  const grupoTexto = partido.grupo
-    ? `<p><strong>Grupo:</strong> ${partido.grupo}</p>`
-    : "";
-
-  div.innerHTML = `
-    <div class="partido-header">
-      <span class="numero-partido">Partido ${partido.numero}</span>
-      <span class="fase-partido">${traducirFase(partido.fase)}</span>
-    </div>
-
-    <div class="equipos">
-      <div class="equipo">
-        ${crearBandera(local)}
-        <span class="nombre-equipo">${local.nombre}</span>
-      </div>
-
-      <div class="versus">VS</div>
-
-      <div class="equipo">
-        ${crearBandera(visitante)}
-        <span class="nombre-equipo">${visitante.nombre}</span>
-      </div>
-    </div>
-
-    <div class="datos-partido">
-      ${grupoTexto}
-      <p><strong>Fecha:</strong> ${formatearFecha(partido.fecha)}</p>
-      <p><strong>Hora local:</strong> ${partido.horaLocal}</p>
-      <p><strong>Hora ET:</strong> ${partido.horaET}</p>
-      <p><strong>Sede:</strong> ${partido.sede}</p>
-      <p><strong>Ciudad:</strong> ${traducirCiudad(partido.ciudad)}</p>
-    </div>
-
-    <div class="prediccion">
-      <input 
-        type="number" 
-        min="0" 
-        id="local-${partido.id}" 
-        placeholder="0"
-        value="${valorLocal}"
-      >
-
-      <span>-</span>
-
-      <input 
-        type="number" 
-        min="0" 
-        id="visitante-${partido.id}" 
-        placeholder="0"
-        value="${valorVisitante}"
-      >
-
-      <button onclick="guardarPrediccion('${partido.id}')">
-        Guardar
-      </button>
-
-      ${estadoGuardado}
-    </div>
-  `;
-
-  partidosContainer.appendChild(div);
-});
+    renderizarFaseGrupos(partidosGrupos);
+    renderizarBracketEliminacion(partidosEliminacion);
+    renderizarMisPredicciones();
 
   } catch (error) {
     console.error("Error cargando partidos:", error);
-    partidosContainer.innerHTML = `
-      <p>No se pudieron cargar los partidos.</p>
-      <p><small>Revisa que el archivo exista en <code>data/partidos.json</code>.</small></p>
+
+    gruposContainer.innerHTML = `
+      <p>No se pudieron cargar los partidos de grupos.</p>
+      <p><small>Revisa que exista <code>data/partidos.json</code>.</small></p>
+    `;
+
+    bracketContainer.innerHTML = `
+      <p>No se pudieron cargar los partidos de eliminación directa.</p>
     `;
   }
 }
@@ -369,6 +322,8 @@ window.guardarPrediccion = async function(partidoId) {
 
     alert("Predicción guardada correctamente en Firebase.");
 
+    await cargarPartidos();
+
   } catch (error) {
     console.error("Error guardando predicción:", error);
     alert("No se pudo guardar la predicción.");
@@ -426,4 +381,219 @@ async function cargarPrediccionesUsuario() {
     console.error("Error cargando predicciones del usuario:", error);
   }
 }
+
+
+
+
+
+
+
+function esFaseDeGrupos(partido) {
+  const faseTraducida = traducirFase(partido.fase);
+  return faseTraducida === "Fase de grupos";
+}
+
+function renderizarFaseGrupos(partidos) {
+  gruposContainer.innerHTML = "";
+
+  if (partidos.length === 0) {
+    gruposContainer.innerHTML = "<p>No hay partidos de fase de grupos.</p>";
+    return;
+  }
+
+  partidos
+    .sort((a, b) => a.numero - b.numero)
+    .forEach((partido) => {
+      gruposContainer.innerHTML += crearTarjetaPartido(partido, false);
+    });
+}
+
+function renderizarBracketEliminacion(partidos) {
+  if (partidos.length === 0) {
+    bracketContainer.innerHTML = "<p>No hay partidos de eliminación directa.</p>";
+    return;
+  }
+
+  const ordenFases = [
+    "Dieciseisavos de final",
+    "Octavos de final",
+    "Cuartos de final",
+    "Semifinales",
+    "Partido por el tercer lugar",
+    "Final"
+  ];
+
+  const partidosPorFase = {};
+
+  ordenFases.forEach((fase) => {
+    partidosPorFase[fase] = [];
+  });
+
+  partidos
+    .sort((a, b) => a.numero - b.numero)
+    .forEach((partido) => {
+      const faseTraducida = traducirFase(partido.fase);
+
+      if (!partidosPorFase[faseTraducida]) {
+        partidosPorFase[faseTraducida] = [];
+      }
+
+      partidosPorFase[faseTraducida].push(partido);
+    });
+
+  bracketContainer.innerHTML = `
+    <div class="bracket">
+      ${ordenFases
+        .filter((fase) => partidosPorFase[fase] && partidosPorFase[fase].length > 0)
+        .map((fase) => `
+          <div class="bracket-columna">
+            <h3 class="bracket-titulo">${fase}</h3>
+            <div class="bracket-partidos ${obtenerClaseBracket(fase)}">
+              ${partidosPorFase[fase]
+                .map((partido) => crearTarjetaPartido(partido, true))
+                .join("")}
+            </div>
+          </div>
+        `)
+        .join("")}
+    </div>
+  `;
+}
+
+function obtenerClaseBracket(fase) {
+  const clases = {
+    "Dieciseisavos de final": "nivel-32",
+    "Octavos de final": "nivel-16",
+    "Cuartos de final": "nivel-8",
+    "Semifinales": "nivel-4",
+    "Partido por el tercer lugar": "nivel-3",
+    "Final": "nivel-final"
+  };
+
+  return clases[fase] || "";
+}
+
+function crearTarjetaPartido(partido, modoBracket = false) {
+  const local = obtenerSeleccion(partido.equipoLocal);
+  const visitante = obtenerSeleccion(partido.equipoVisitante);
+
+  const prediccionGuardada = prediccionesUsuario[partido.id];
+
+  const valorLocal = prediccionGuardada ? prediccionGuardada.golesLocal : "";
+  const valorVisitante = prediccionGuardada ? prediccionGuardada.golesVisitante : "";
+
+  const estadoGuardado = prediccionGuardada
+    ? `<span class="estado-guardado">Guardado</span>`
+    : `<span class="estado-pendiente">Sin guardar</span>`;
+
+  const grupoTexto = partido.grupo
+    ? `<p><strong>Grupo:</strong> ${partido.grupo}</p>`
+    : "";
+
+  const datosPartido = modoBracket
+    ? `
+      <div class="datos-partido datos-partido-bracket">
+        <p><strong>Fecha:</strong> ${formatearFecha(partido.fecha)}</p>
+        <p><strong>Hora:</strong> ${partido.horaLocal}</p>
+        <p><strong>Ciudad:</strong> ${traducirCiudad(partido.ciudad)}</p>
+      </div>
+    `
+    : `
+      <div class="datos-partido">
+        ${grupoTexto}
+        <p><strong>Fecha:</strong> ${formatearFecha(partido.fecha)}</p>
+        <p><strong>Hora local:</strong> ${partido.horaLocal}</p>
+        <p><strong>Hora ET:</strong> ${partido.horaET}</p>
+        <p><strong>Sede:</strong> ${partido.sede}</p>
+        <p><strong>Ciudad:</strong> ${traducirCiudad(partido.ciudad)}</p>
+      </div>
+    `;
+
+  const claseFinal = partido.numero === 104 ? "partido-final" : "";
+
+return `
+  <div class="partido ${modoBracket ? "partido-bracket" : ""} ${claseFinal}">
+      <div class="partido-header">
+        <span class="numero-partido">Partido ${partido.numero}</span>
+        <span class="fase-partido">${traducirFase(partido.fase)}</span>
+      </div>
+
+      <div class="equipos ${modoBracket ? "equipos-bracket" : ""}">
+        <div class="equipo">
+          ${crearBandera(local)}
+          <span class="nombre-equipo">${local.nombre}</span>
+        </div>
+
+        <div class="versus">VS</div>
+
+        <div class="equipo">
+          ${crearBandera(visitante)}
+          <span class="nombre-equipo">${visitante.nombre}</span>
+        </div>
+      </div>
+
+      ${datosPartido}
+
+      <div class="prediccion ${modoBracket ? "prediccion-bracket" : ""}">
+        <input 
+          type="number" 
+          min="0" 
+          id="local-${partido.id}" 
+          placeholder="0"
+          value="${valorLocal}"
+        >
+
+        <span>-</span>
+
+        <input 
+          type="number" 
+          min="0" 
+          id="visitante-${partido.id}" 
+          placeholder="0"
+          value="${valorVisitante}"
+        >
+
+        <button onclick="guardarPrediccion('${partido.id}')">
+          Guardar
+        </button>
+
+        ${estadoGuardado}
+      </div>
+    </div>
+  `;
+}
+
+function renderizarMisPredicciones() {
+  if (!usuarioActual) {
+    misPrediccionesContainer.innerHTML = `
+      <p>Inicia sesión para ver tus predicciones guardadas.</p>
+    `;
+    return;
+  }
+
+  const idsPredichos = Object.keys(prediccionesUsuario);
+
+  if (idsPredichos.length === 0) {
+    misPrediccionesContainer.innerHTML = `
+      <p>Aún no has guardado predicciones.</p>
+    `;
+    return;
+  }
+
+  const partidosConPrediccion = partidosGlobales.filter((partido) =>
+    idsPredichos.includes(partido.id)
+  );
+
+  misPrediccionesContainer.innerHTML = "";
+
+  partidosConPrediccion
+    .sort((a, b) => a.numero - b.numero)
+    .forEach((partido) => {
+      misPrediccionesContainer.innerHTML += crearTarjetaPartido(partido, false);
+    });
+}
+
+
+
+
 //cargarPartidos();

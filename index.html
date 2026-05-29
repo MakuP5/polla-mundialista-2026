@@ -21,23 +21,51 @@
   </header>
 
   <main class="container">
-    <section class="card">
-      <h2>Partidos</h2>
-      <div id="partidosContainer">
-        <p>Cargando partidos...</p>
-      </div>
-    </section>
 
-    <section class="card">
-      <h2>Ranking simulado</h2>
-      <div id="rankingContainer">
-        <ol>
-          <li>Mak FC - 15 puntos</li>
-          <li>Chelita United - 12 puntos</li>
-          <li>Marce Club - 10 puntos</li>
-        </ol>
+<nav class="tabs-menu">
+  <button class="tab-btn active" data-tab="tab-grupos">Fase de grupos</button>
+  <button class="tab-btn" data-tab="tab-eliminacion">Eliminación directa</button>
+  <button class="tab-btn" data-tab="tab-mis-predicciones">Mis predicciones</button>
+  <button class="tab-btn" data-tab="tab-ranking">Ranking</button>
+</nav>
+
+<section id="tab-grupos" class="tab-content active">
+  <div class="card">
+    <h2>Fase de grupos</h2>
+    <div id="gruposContainer">
+      <p>Cargando partidos de grupos...</p>
+    </div>
+  </div>
+</section>
+
+<section id="tab-eliminacion" class="tab-content">
+  <div class="card">
+    <h2>Eliminación directa <span class="hint-scroll">← desliza →</span></h2>
+    <div class="bracket-scroll">
+      <div id="bracketContainer">
+        <p>Cargando eliminación directa...</p>
       </div>
-    </section>
+    </div>
+  </div>
+</section>
+
+<section id="tab-mis-predicciones" class="tab-content">
+  <div class="card">
+    <h2>Mis predicciones</h2>
+    <div id="misPrediccionesContainer">
+      <p>Inicia sesión para ver tus predicciones guardadas.</p>
+    </div>
+  </div>
+</section>
+
+<section id="tab-ranking" class="tab-content">
+  <div class="card">
+    <h2>Ranking general</h2>
+    <div id="rankingContainer">
+      <p>El ranking estará disponible cuando se registren resultados.</p>
+    </div>
+  </div>
+</section>
   </main>
 
   <script type="module" src="app.js"></script>
