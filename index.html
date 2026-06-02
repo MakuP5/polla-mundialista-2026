@@ -14,10 +14,58 @@
     <h1>⚽ Polla Mundialista 2026</h1>
     <p>Registra tus predicciones, compite con tus amigos y sube en el ranking.</p>
     <div class="auth-panel">
-        <button id="btnLogin">Ingresar con Google</button>
-        <button id="btnLogout" class="hidden">Cerrar sesión</button>
-        <p id="userInfo">No has iniciado sesión.</p>
+  <div id="authLoggedOut">
+    <div class="auth-actions">
+      <button id="btnLogin">Ingresar con Google</button>
     </div>
+
+    <div class="auth-email-card">
+      <h3>Ingresar con correo</h3>
+
+      <input 
+        type="text" 
+        id="nombreRegistro" 
+        placeholder="Nombre para mostrar"
+      >
+
+      <input 
+        type="email" 
+        id="emailAuth" 
+        placeholder="Correo electrónico"
+      >
+
+      <input 
+        type="password" 
+        id="passwordAuth" 
+        placeholder="Contraseña mínimo 6 caracteres"
+      >
+
+      <div class="auth-actions">
+        <button id="btnRegistroEmail">Registrarme</button>
+        <button id="btnLoginEmail">Ingresar</button>
+        <button id="btnRecuperarPassword" type="button">
+          Olvidé mi contraseña
+        </button>
+      </div>
+
+      <p class="auth-help">
+        Después de registrarte, revisa tu correo y confirma tu cuenta antes de guardar predicciones.
+      </p>
+    </div>
+  </div>
+
+  <div id="authLoggedIn" class="hidden">
+    <p id="userInfo">No has iniciado sesión.</p>
+
+    <div id="emailVerificationPanel" class="verification-panel hidden">
+      <p>Tu correo aún no está verificado.</p>
+      <button id="btnReenviarVerificacion">Reenviar correo de verificación</button>
+      <button id="btnVerificarEstado">Ya verifiqué mi correo</button>
+    </div>
+
+    <button id="btnLogout">Cerrar sesión</button>
+  </div>
+</div>
   </header>
 
   <main class="container">

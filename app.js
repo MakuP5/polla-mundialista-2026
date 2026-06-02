@@ -1,9 +1,14 @@
 import { auth, provider, db } from "./firebase-config.js";
 
 import {
-  signInWithPopup,
+   signInWithPopup,
   signOut,
-  onAuthStateChanged
+  onAuthStateChanged,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  sendEmailVerification,
+  sendPasswordResetEmail,
+  updateProfile
 } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-auth.js";
 
 import {
@@ -31,6 +36,25 @@ const userInfo = document.getElementById("userInfo");
 const botonesTabs = document.querySelectorAll(".tab-btn");
 const contenidosTabs = document.querySelectorAll(".tab-content");
 
+const authLoggedOut = document.getElementById("authLoggedOut");
+const authLoggedIn = document.getElementById("authLoggedIn");
+
+const nombreRegistro = document.getElementById("nombreRegistro");
+const emailAuth = document.getElementById("emailAuth");
+const passwordAuth = document.getElementById("passwordAuth");
+
+const btnRegistroEmail = document.getElementById("btnRegistroEmail");
+const btnLoginEmail = document.getElementById("btnLoginEmail");
+const btnReenviarVerificacion = document.getElementById("btnReenviarVerificacion");
+const btnVerificarEstado = document.getElementById("btnVerificarEstado");
+
+const emailVerificationPanel = document.getElementById("emailVerificationPanel");
+
+const btnRegistroEmail = document.getElementById("btnRegistroEmail");
+const btnLoginEmail = document.getElementById("btnLoginEmail");
+const btnRecuperarPassword = document.getElementById("btnRecuperarPassword");
+
+
 botonesTabs.forEach((boton) => {
   boton.addEventListener("click", () => {
     const tabId = boton.dataset.tab;
@@ -57,6 +81,111 @@ btnLogin.addEventListener("click", async () => {
   }
 });
 
+btnRecuperarPassword.addEventListener("click", async () => {
+  const email = emailAuth.value.trim().toLowerCase();
+
+  if (!email) {
+    alert("Ingresa tu correo electrónico para enviarte el enlace de recuperación.");
+    return;
+  }
+
+  try {
+    await sendPasswordResetEmail(auth, email);
+
+    alert("Te enviamos un correo para restablecer tu contraseña. Revisa tu bandeja de entrada o spam.");
+  } catch (error) {
+    console.error("Error enviando recuperación de contraseña:", error);
+
+    if (error.code === "auth/invalid-email") {
+      alert("El correo ingresado no es válido.");
+    } else if (error.code === "auth/user-not-found") {
+      alert("No existe una cuenta registrada con ese correo.");
+    } else {
+      alert("No se pudo enviar el correo de recuperación.");
+    }
+  }
+});
+
+btnRegistroEmail.addEventListener("click", async () => {
+  const nombre = nombreRegistro.value.trim();
+  const email = emailAuth.value.trim().toLowerCase();
+  const password = passwordAuth.value;
+
+  if (!esCorreoInstitucional(email)) {
+  alert("Debes registrarte con tu correo institucional UPS.");
+  return;
+}
+
+  if (!nombre || !email || !password) {
+    alert("Completa nombre, correo y contraseña.");
+    return;
+  }
+
+  if (password.length < 6) {
+    alert("La contraseña debe tener al menos 6 caracteres.");
+    return;
+  }
+
+  try {
+    const credencial = await createUserWithEmailAndPassword(auth, email, password);
+
+    await updateProfile(credencial.user, {
+      displayName: nombre
+    });
+
+    await sendEmailVerification(credencial.user);
+
+    await registrarUsuario({
+      ...credencial.user,
+      displayName: nombre
+    });
+
+    alert("Registro creado. Te enviamos un correo de verificación. Revisa tu bandeja de entrada o spam.");
+
+  } catch (error) {
+    console.error("Error registrando usuario:", error);
+
+    if (error.code === "auth/email-already-in-use") {
+      alert("Ese correo ya está registrado. Intenta ingresar.");
+    } else if (error.code === "auth/invalid-email") {
+      alert("El correo no es válido.");
+    } else if (error.code === "auth/weak-password") {
+      alert("La contraseña es muy débil.");
+    } else {
+      alert("No se pudo crear el registro.");
+    }
+  }
+});
+
+btnLoginEmail.addEventListener("click", async () => {
+  const email = emailAuth.value.trim().toLowerCase();
+  const password = passwordAuth.value;
+
+  if (!email || !password) {
+    alert("Ingresa correo y contraseña.");
+    return;
+  }
+
+  if (!esCorreoInstitucional(email)) {
+  alert("Debes ingresar con tu correo institucional UPS.");
+  return;
+}
+
+  try {
+    await signInWithEmailAndPassword(auth, email, password);
+  } catch (error) {
+    console.error("Error ingresando con correo:", error);
+
+    if (error.code === "auth/invalid-credential") {
+      alert("Correo o contraseña incorrectos.");
+    } else if (error.code === "auth/invalid-email") {
+      alert("El correo no es válido.");
+    } else {
+      alert("No se pudo iniciar sesión.");
+    }
+  }
+});
+
 btnLogout.addEventListener("click", async () => {
   try {
     await signOut(auth);
@@ -65,23 +194,57 @@ btnLogout.addEventListener("click", async () => {
   }
 });
 
+btnReenviarVerificacion.addEventListener("click", async () => {
+  if (!auth.currentUser) {
+    alert("Primero inicia sesión.");
+    return;
+  }
+
+  try {
+    await sendEmailVerification(auth.currentUser);
+    alert("Correo de verificación reenviado. Revisa tu bandeja de entrada o spam.");
+  } catch (error) {
+    console.error("Error reenviando verificación:", error);
+    alert("No se pudo reenviar el correo de verificación.");
+  }
+});
+
+btnVerificarEstado.addEventListener("click", async () => {
+  if (!auth.currentUser) {
+    alert("Primero inicia sesión.");
+    return;
+  }
+
+  await auth.currentUser.reload();
+
+  if (auth.currentUser.emailVerified) {
+    alert("Correo verificado correctamente.");
+    await cargarPartidos();
+    actualizarPanelUsuario(auth.currentUser);
+  } else {
+    alert("Tu correo todavía no aparece como verificado. Revisa el enlace enviado a tu correo.");
+  }
+});
+
 onAuthStateChanged(auth, async (user) => {
   if (user) {
-    usuarioActual = user;
+    await user.reload();
 
-    btnLogin.classList.add("hidden");
-    btnLogout.classList.remove("hidden");
-    userInfo.textContent = `Sesión iniciada como: ${user.displayName}`;
+    usuarioActual = auth.currentUser;
 
-    await registrarUsuario(user);
+    actualizarPanelUsuario(usuarioActual);
+
+    if (usuarioActual.emailVerified) {
+      await registrarUsuario(usuarioActual);
+    }
+
     await cargarPartidos();
 
   } else {
     usuarioActual = null;
+    prediccionesUsuario = {};
 
-    btnLogin.classList.remove("hidden");
-    btnLogout.classList.add("hidden");
-    userInfo.textContent = "No has iniciado sesión.";
+    actualizarPanelUsuario(null);
 
     await cargarPartidos();
   }
@@ -119,6 +282,30 @@ async function cargarPartidos() {
     bracketContainer.innerHTML = `
       <p>No se pudieron cargar los partidos de eliminación directa.</p>
     `;
+  }
+}
+
+function actualizarPanelUsuario(user) {
+  if (user) {
+    authLoggedOut.classList.add("hidden");
+    authLoggedIn.classList.remove("hidden");
+
+    const nombre = user.displayName || user.email;
+    const verificado = user.emailVerified ? "Correo verificado" : "Correo no verificado";
+
+    userInfo.textContent = `Sesión iniciada como: ${nombre} · ${verificado}`;
+
+    if (user.emailVerified) {
+      emailVerificationPanel.classList.add("hidden");
+    } else {
+      emailVerificationPanel.classList.remove("hidden");
+    }
+
+  } else {
+    authLoggedOut.classList.remove("hidden");
+    authLoggedIn.classList.add("hidden");
+    emailVerificationPanel.classList.add("hidden");
+    userInfo.textContent = "No has iniciado sesión.";
   }
 }
 
@@ -273,9 +460,18 @@ function formatearFecha(fechaTexto) {
 
 window.guardarPrediccion = async function(partidoId) {
   if (!usuarioActual) {
-    alert("Primero debes iniciar sesión con Google.");
-    return;
-  }
+  alert("Primero debes iniciar sesión.");
+  return;
+}
+
+await usuarioActual.reload();
+usuarioActual = auth.currentUser;
+
+if (!usuarioActual.emailVerified) {
+  alert("Debes verificar tu correo antes de guardar predicciones.");
+  actualizarPanelUsuario(usuarioActual);
+  return;
+}
 
   const golesLocal = document.getElementById(`local-${partidoId}`).value;
   const golesVisitante = document.getElementById(`visitante-${partidoId}`).value;
@@ -334,16 +530,24 @@ async function registrarUsuario(user) {
   const userRef = doc(db, "usuarios", user.uid);
   const userSnap = await getDoc(userRef);
 
+  const datosUsuario = {
+    nombre: user.displayName || user.email,
+    email: user.email,
+    emailVerificado: user.emailVerified,
+    rol: "participante",
+    ultimaConexion: serverTimestamp()
+  };
+
   if (!userSnap.exists()) {
     await setDoc(userRef, {
-      nombre: user.displayName,
-      email: user.email,
-      rol: "participante",
+      ...datosUsuario,
       puntosTotales: 0,
       aciertosExactos: 0,
       aciertosResultado: 0,
       fechaRegistro: serverTimestamp()
     });
+  } else {
+    await setDoc(userRef, datosUsuario, { merge: true });
   }
 }
 
@@ -406,6 +610,10 @@ function renderizarFaseGrupos(partidos) {
     .forEach((partido) => {
       gruposContainer.innerHTML += crearTarjetaPartido(partido, false);
     });
+}
+
+function esCorreoInstitucional(email) {
+  return email && email.toLowerCase().endsWith("@ups.edu.ec");
 }
 
 function renderizarBracketEliminacion(partidos) {
