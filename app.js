@@ -43,8 +43,6 @@ const nombreRegistro = document.getElementById("nombreRegistro");
 const emailAuth = document.getElementById("emailAuth");
 const passwordAuth = document.getElementById("passwordAuth");
 
-const btnRegistroEmail = document.getElementById("btnRegistroEmail");
-const btnLoginEmail = document.getElementById("btnLoginEmail");
 const btnReenviarVerificacion = document.getElementById("btnReenviarVerificacion");
 const btnVerificarEstado = document.getElementById("btnVerificarEstado");
 
