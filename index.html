@@ -70,12 +70,13 @@
 
   <main class="container">
 
-<nav class="tabs-menu">
-  <button class="tab-btn active" data-tab="tab-grupos">Fase de grupos</button>
-  <button class="tab-btn" data-tab="tab-eliminacion">Eliminación directa</button>
-  <button class="tab-btn" data-tab="tab-mis-predicciones">Mis predicciones</button>
-  <button class="tab-btn" data-tab="tab-ranking">Ranking</button>
-</nav>
+    <nav class="tabs-menu">
+      <button class="tab-btn active" data-tab="tab-grupos">Fase de grupos</button>
+      <button class="tab-btn" data-tab="tab-eliminacion">Eliminación directa</button>
+      <button class="tab-btn" data-tab="tab-mis-predicciones">Mis predicciones</button>
+      <button class="tab-btn" data-tab="tab-ranking">Ranking</button>
+      <button class="tab-btn" data-tab="tab-reglamento">Reglamento</button>
+    </nav>
 
 <section id="tab-grupos" class="tab-content active">
   <div class="card">
@@ -114,7 +115,125 @@
     </div>
   </div>
 </section>
-  </main>
+
+
+<section id="tab-reglamento" class="tab-content">
+  <div class="card reglamento-card">
+    <div class="reglamento-header">
+      <span class="reglamento-icon">📜</span>
+      <div>
+        <h2>Reglamento oficial</h2>
+        <p>Polla Mundialista 2026</p>
+      </div>
+    </div>
+
+    <div class="reglamento-bloque objetivo">
+      <h3>Objetivo</h3>
+      <p>
+        Premiar a los participantes que demuestren mayor precisión en sus pronósticos
+        durante la Copa Mundial de la FIFA 2026.
+      </p>
+    </div>
+
+    <div class="reglamento-bloque">
+      <h3>Inscripción y entrega de pronósticos</h3>
+      <p>
+        Los pronósticos deberán entregarse antes del partido inaugural del Mundial.
+        No se permitirán modificaciones una vez iniciado el torneo.
+      </p>
+    </div>
+
+    <div class="reglamento-grid">
+      <article class="regla-item">
+        <h4>Fase de grupos</h4>
+        <ul>
+          <li>Acierto del ganador o empate: <strong>1 punto</strong>.</li>
+          <li>Marcador exacto: <strong>2 puntos</strong>.</li>
+          <li>El marcador exacto reemplaza el punto del ganador.</li>
+        </ul>
+      </article>
+
+      <article class="regla-item">
+        <h4>Clasificación a dieciseisavos</h4>
+        <ul>
+          <li>Equipo clasificado: <strong>1 punto</strong>.</li>
+          <li>Si además acierta la ubicación, 1.º o 2.º del grupo: <strong>+1 punto adicional</strong>.</li>
+        </ul>
+      </article>
+
+      <article class="regla-item">
+        <h4>Dieciseisavos de final</h4>
+        <p>Equipo que avanza: <strong>2 puntos</strong>.</p>
+      </article>
+
+      <article class="regla-item">
+        <h4>Octavos de final</h4>
+        <p>Equipo que avanza: <strong>3 puntos</strong>.</p>
+      </article>
+
+      <article class="regla-item">
+        <h4>Cuartos de final</h4>
+        <p>Equipo que avanza: <strong>4 puntos</strong>.</p>
+      </article>
+
+      <article class="regla-item">
+        <h4>Semifinales</h4>
+        <p>Equipo que avanza: <strong>5 puntos</strong>.</p>
+      </article>
+
+      <article class="regla-item destacada">
+        <h4>Final</h4>
+        <ul>
+          <li>Campeón correcto: <strong>5 puntos</strong>.</li>
+          <li>Subcampeón correcto: <strong>4 puntos</strong>.</li>
+        </ul>
+      </article>
+
+      <article class="regla-item destacada">
+        <h4>Premios especiales</h4>
+        <ul>
+          <li>Goleador del torneo: <strong>5 puntos</strong>.</li>
+          <li>Mejor jugador del torneo: <strong>5 puntos</strong>.</li>
+        </ul>
+      </article>
+    </div>
+
+    <div class="reglamento-bloque desempates">
+      <h3>Criterios de desempate</h3>
+      <ol>
+        <li>Mayor cantidad de marcadores exactos.</li>
+        <li>Mayor cantidad de clasificados acertados.</li>
+        <li>Campeón acertado.</li>
+        <li>Subcampeón acertado.</li>
+        <li>Goleador acertado.</li>
+        <li>Sorteo.</li>
+      </ol>
+    </div>
+
+    <div class="reglamento-ejemplo">
+      <h3>Ejemplo de puntuación</h3>
+      <p>
+        Si las posiciones oficiales de un grupo son: <strong>1.º Ecuador</strong> y
+        <strong>2.º Alemania</strong>, y el participante acierta ambos clasificados
+        con sus posiciones correctas, obtiene <strong>4 puntos</strong>:
+      </p>
+
+      <div class="formula-puntos">
+        <span>1 punto por Ecuador clasificado</span>
+        <span>+</span>
+        <span>1 punto por Ecuador en 1.º lugar</span>
+        <span>+</span>
+        <span>1 punto por Alemania clasificada</span>
+        <span>+</span>
+        <span>1 punto por Alemania en 2.º lugar</span>
+        <span>=</span>
+        <strong>4 puntos</strong>
+      </div>
+    </div>
+  </div>
+</section>
+
+</main>
 
   <script type="module" src="app.js"></script>
 </body>

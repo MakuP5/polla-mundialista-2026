@@ -644,3 +644,179 @@ button {
 #btnRecuperarPassword:hover {
   background: rgba(255, 209, 102, 0.15);
 }
+
+.reglamento-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.reglamento-card::before {
+  content: "";
+  position: absolute;
+  top: -80px;
+  right: -80px;
+  width: 180px;
+  height: 180px;
+  background: rgba(255, 209, 102, 0.12);
+  border-radius: 50%;
+}
+
+.reglamento-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 24px;
+  position: relative;
+  z-index: 1;
+}
+
+.reglamento-icon {
+  width: 58px;
+  height: 58px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #ffd166;
+  color: #111;
+  border-radius: 18px;
+  font-size: 2rem;
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.35);
+}
+
+.reglamento-header h2 {
+  margin: 0;
+}
+
+.reglamento-header p {
+  margin: 4px 0 0;
+  color: #9fd3ff;
+  font-weight: bold;
+}
+
+.reglamento-bloque {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  padding: 18px;
+  margin-bottom: 18px;
+  position: relative;
+  z-index: 1;
+}
+
+.reglamento-bloque h3,
+.reglamento-ejemplo h3 {
+  margin-top: 0;
+  color: #ffd166;
+}
+
+.reglamento-bloque p {
+  margin-bottom: 0;
+  color: #dbeafe;
+}
+
+.reglamento-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin: 22px 0;
+  position: relative;
+  z-index: 1;
+}
+
+.regla-item {
+  background: #0b1626;
+  border: 1px solid #24496e;
+  border-radius: 16px;
+  padding: 18px;
+}
+
+.regla-item h4 {
+  margin-top: 0;
+  color: #9fd3ff;
+}
+
+.regla-item p,
+.regla-item li {
+  color: #dbeafe;
+  line-height: 1.5;
+}
+
+.regla-item ul {
+  padding-left: 18px;
+  margin-bottom: 0;
+}
+
+.regla-item strong {
+  color: #ffd166;
+}
+
+.regla-item.destacada {
+  border-color: #ffd166;
+  background: linear-gradient(135deg, rgba(255, 209, 102, 0.12), #0b1626);
+}
+
+.desempates ol {
+  margin-bottom: 0;
+  padding-left: 22px;
+}
+
+.desempates li {
+  margin-bottom: 8px;
+  color: #dbeafe;
+}
+
+.reglamento-ejemplo {
+  background: linear-gradient(135deg, #06283d, #101d2e);
+  border: 1px solid #47b5ff;
+  border-radius: 18px;
+  padding: 20px;
+  position: relative;
+  z-index: 1;
+}
+
+.reglamento-ejemplo p {
+  color: #dbeafe;
+}
+
+.formula-puntos {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.formula-puntos span,
+.formula-puntos strong {
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 8px 10px;
+  border-radius: 999px;
+  font-size: 0.9rem;
+}
+
+.formula-puntos strong {
+  background: #ffd166;
+  color: #111;
+}
+
+@media (max-width: 760px) {
+  .reglamento-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .reglamento-header {
+    align-items: flex-start;
+  }
+
+  .formula-puntos {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .formula-puntos span,
+  .formula-puntos strong {
+    border-radius: 12px;
+    text-align: center;
+  }
+}
