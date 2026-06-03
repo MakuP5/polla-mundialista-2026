@@ -77,6 +77,14 @@
       <button class="tab-btn" data-tab="tab-ranking">Ranking</button>
       <button class="tab-btn" data-tab="tab-reglamento">Reglamento</button>
     </nav>
+<div class="guardar-global-panel">
+  <button id="btnGuardarTodo" class="btn-guardar-todo">
+    💾 Guardar todos mis pronósticos
+  </button>
+  <p id="estadoGuardadoGlobal">
+    Completa tus marcadores y guarda tu polla antes del inicio del Mundial.
+  </p>
+</div>
 
 <section id="tab-grupos" class="tab-content active">
   <div class="card">
@@ -90,6 +98,9 @@
 <section id="tab-eliminacion" class="tab-content">
   <div class="card">
     <h2>Eliminación directa <span class="hint-scroll">← desliza →</span></h2>
+    <button id="btnRecalcularBracket" class="btn-recalcular-bracket">
+  🔄 Recalcular llaves con mis pronósticos
+</button>
     <div class="bracket-scroll">
       <div id="bracketContainer">
         <p>Cargando eliminación directa...</p>

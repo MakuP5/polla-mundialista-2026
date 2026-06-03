@@ -1,7 +1,7 @@
 import { auth, provider, db } from "./firebase-config.js";
 
 import {
-   signInWithPopup,
+  signInWithPopup,
   signOut,
   onAuthStateChanged,
   createUserWithEmailAndPassword,
@@ -52,6 +52,9 @@ const btnRegistroEmail = document.getElementById("btnRegistroEmail");
 const btnLoginEmail = document.getElementById("btnLoginEmail");
 const btnRecuperarPassword = document.getElementById("btnRecuperarPassword");
 
+const btnGuardarTodo = document.getElementById("btnGuardarTodo");
+const estadoGuardadoGlobal = document.getElementById("estadoGuardadoGlobal");
+const btnRecalcularBracket = document.getElementById("btnRecalcularBracket");
 
 botonesTabs.forEach((boton) => {
   boton.addEventListener("click", () => {
@@ -102,6 +105,24 @@ btnRecuperarPassword.addEventListener("click", async () => {
       alert("No se pudo enviar el correo de recuperación.");
     }
   }
+});
+
+btnRecalcularBracket.addEventListener("click", () => {
+  const pronosticosTemporales = recolectarPronosticosPartidos();
+
+  const partidosCalculados = calcularPartidosConPronosticos(
+    partidosGlobales,
+    {
+      ...prediccionesUsuario,
+      ...pronosticosTemporales
+    }
+  );
+
+  const partidosEliminacion = partidosCalculados.filter((partido) => !esFaseDeGrupos(partido));
+
+  renderizarBracketEliminacion(partidosEliminacion);
+
+  alert("Las llaves se recalcularon con los pronósticos ingresados.");
 });
 
 btnRegistroEmail.addEventListener("click", async () => {
@@ -224,6 +245,8 @@ btnVerificarEstado.addEventListener("click", async () => {
   }
 });
 
+btnGuardarTodo.addEventListener("click", guardarTodosLosPronosticos);
+
 onAuthStateChanged(auth, async (user) => {
   if (user) {
     await user.reload();
@@ -262,8 +285,10 @@ async function cargarPartidos() {
 
     await cargarPrediccionesUsuario();
 
+    const partidosCalculados = calcularPartidosConPronosticos(partidos, prediccionesUsuario);
+
     const partidosGrupos = partidos.filter(esFaseDeGrupos);
-    const partidosEliminacion = partidos.filter((partido) => !esFaseDeGrupos(partido));
+    const partidosEliminacion = partidosCalculados.filter((partido) => !esFaseDeGrupos(partido));
 
     renderizarFaseGrupos(partidosGrupos);
     renderizarBracketEliminacion(partidosEliminacion);
@@ -557,37 +582,125 @@ async function cargarPrediccionesUsuario() {
   }
 
   try {
-    const prediccionesRef = collection(db, "predicciones");
+    const docRef = doc(db, "prediccionesUsuarios", usuarioActual.uid);
+    const docSnap = await getDoc(docRef);
 
-    const q = query(
-      prediccionesRef,
-      where("userId", "==", usuarioActual.uid)
-    );
+    if (docSnap.exists()) {
+      const data = docSnap.data();
 
-    const querySnapshot = await getDocs(q);
+      prediccionesUsuario = data.partidos || {};
 
-    querySnapshot.forEach((documento) => {
-      const prediccion = documento.data();
-
-      prediccionesUsuario[prediccion.partidoId] = {
-        golesLocal: prediccion.golesLocal,
-        golesVisitante: prediccion.golesVisitante,
-        puntos: prediccion.puntos,
-        estadoPuntuacion: prediccion.estadoPuntuacion
-      };
-    });
-
-    console.log("Predicciones cargadas:", prediccionesUsuario);
+      estadoGuardadoGlobal.textContent = "Tus pronósticos guardados se cargaron correctamente.";
+    } else {
+      estadoGuardadoGlobal.textContent = "Todavía no has guardado tu polla.";
+    }
 
   } catch (error) {
     console.error("Error cargando predicciones del usuario:", error);
+    estadoGuardadoGlobal.textContent = "No se pudieron cargar tus pronósticos guardados.";
   }
+}
+
+function obtenerNombreEquipoDesdeTarjeta(partidoId, tipo) {
+  const elemento = document.querySelector(`[data-equipo-${tipo}="${partidoId}"]`);
+  return elemento ? elemento.textContent.trim() : null;
+}
+
+function recolectarPronosticosPartidos() {
+  const pronosticos = {};
+
+  partidosGlobales.forEach((partido) => {
+    const inputLocal = document.getElementById(`local-${partido.id}`);
+    const inputVisitante = document.getElementById(`visitante-${partido.id}`);
+    const selectAvanza = document.getElementById(`avanza-${partido.id}`);
+    const nombreLocalMostrado = obtenerNombreEquipoDesdeInput(partido.id, "local") || partido.equipoLocal;
+    const nombreVisitanteMostrado = obtenerNombreEquipoDesdeInput(partido.id, "visitante") || partido.equipoVisitante;
+
+
+    if (!inputLocal || !inputVisitante) {
+      return;
+    }
+
+    const golesLocal = inputLocal.value;
+    const golesVisitante = inputVisitante.value;
+
+    if (golesLocal === "" && golesVisitante === "") {
+      return;
+    }
+
+    pronosticos[partido.id] = {
+      partidoId: partido.id,
+      numero: partido.numero,
+      fase: partido.fase,
+      equipoLocal: equipoLocalMostrado,
+      equipoVisitante: equipoVisitanteMostrado,
+      grupo: partido.grupo || null,
+      golesLocal: golesLocal === "" ? null : Number(golesLocal),
+      golesVisitante: golesVisitante === "" ? null : Number(golesVisitante),
+      equipoAvanza: selectAvanza ? selectAvanza.value || null : null,
+      puntos: 0,
+      estadoPuntuacion: "pendiente"
+    };
+  });
+
+  return pronosticos;
 }
 
 
 
+async function guardarTodosLosPronosticos() {
+  if (!usuarioActual) {
+    alert("Primero debes iniciar sesión.");
+    return;
+  }
 
+  await usuarioActual.reload();
+  usuarioActual = auth.currentUser;
 
+  if (!usuarioActual.emailVerified) {
+    alert("Debes verificar tu correo antes de guardar tus pronósticos.");
+    actualizarPanelUsuario(usuarioActual);
+    return;
+  }
+
+  const pronosticosPartidos = recolectarPronosticosPartidos();
+
+  if (Object.keys(pronosticosPartidos).length === 0) {
+    alert("Todavía no has ingresado ningún pronóstico.");
+    return;
+  }
+
+  try {
+    const docRef = doc(db, "prediccionesUsuarios", usuarioActual.uid);
+
+    await setDoc(docRef, {
+      userId: usuarioActual.uid,
+      userName: usuarioActual.displayName || usuarioActual.email,
+      userEmail: usuarioActual.email,
+      emailVerificado: usuarioActual.emailVerified,
+      partidos: pronosticosPartidos,
+      puntosTotales: 0,
+      aciertosExactos: 0,
+      aciertosResultado: 0,
+      aciertosClasificados: 0,
+      acertoCampeon: false,
+      acertoSubcampeon: false,
+      acertoGoleador: false,
+      fechaActualizacion: serverTimestamp()
+    }, { merge: true });
+
+    prediccionesUsuario = pronosticosPartidos;
+
+    estadoGuardadoGlobal.textContent = "Pronósticos guardados correctamente.";
+    alert("Todos tus pronósticos fueron guardados correctamente.");
+
+    await cargarPartidos();
+
+  } catch (error) {
+    console.error("Error guardando todos los pronósticos:", error);
+    alert("No se pudieron guardar tus pronósticos.");
+  }
+}
 
 
 function esFaseDeGrupos(partido) {
@@ -716,6 +829,25 @@ function crearTarjetaPartido(partido, modoBracket = false) {
     `;
 
   const claseFinal = partido.numero === 104 ? "partido-final" : "";
+  const esEliminacion = !esFaseDeGrupos(partido);
+const equipoAvanzaGuardado = prediccionGuardada ? prediccionGuardada.equipoAvanza : "";
+
+const selectorAvanza = esEliminacion
+  ? `
+    <div class="selector-avanza">
+      <label for="avanza-${partido.id}">Equipo que avanza</label>
+      <select id="avanza-${partido.id}">
+        <option value="">Selecciona</option>
+        <option value="${partido.equipoLocal}" ${equipoAvanzaGuardado === partido.equipoLocal ? "selected" : ""}>
+          ${local.nombre}
+        </option>
+        <option value="${partido.equipoVisitante}" ${equipoAvanzaGuardado === partido.equipoVisitante ? "selected" : ""}>
+          ${visitante.nombre}
+        </option>
+      </select>
+    </div>
+  `
+  : "";
 
 return `
   <div class="partido ${modoBracket ? "partido-bracket" : ""} ${claseFinal}">
@@ -727,14 +859,14 @@ return `
       <div class="equipos ${modoBracket ? "equipos-bracket" : ""}">
         <div class="equipo">
           ${crearBandera(local)}
-          <span class="nombre-equipo">${local.nombre}</span>
+          <span class="nombre-equipo" data-equipo-local="${partido.id}">${local.nombre}</span>
         </div>
 
         <div class="versus">VS</div>
 
         <div class="equipo">
           ${crearBandera(visitante)}
-          <span class="nombre-equipo">${visitante.nombre}</span>
+          <span class="nombre-equipo" data-equipo-visitante="${partido.id}">${visitante.nombre}</span>
         </div>
       </div>
 
@@ -759,14 +891,240 @@ return `
           value="${valorVisitante}"
         >
 
-        <button onclick="guardarPrediccion('${partido.id}')">
-          Guardar
-        </button>
-
+       
         ${estadoGuardado}
+        ${selectorAvanza}
       </div>
     </div>
   `;
+}
+
+function calcularTablasDeGrupos(partidos, predicciones) {
+  const tablas = {};
+
+  const partidosGrupo = partidos.filter(esFaseDeGrupos);
+
+  partidosGrupo.forEach((partido) => {
+    const prediccion = predicciones[partido.id];
+
+    if (!prediccion) return;
+    if (prediccion.golesLocal === null || prediccion.golesVisitante === null) return;
+    if (prediccion.golesLocal === undefined || prediccion.golesVisitante === undefined) return;
+
+    const grupo = partido.grupo;
+    if (!grupo) return;
+
+    if (!tablas[grupo]) {
+      tablas[grupo] = {};
+    }
+
+    inicializarEquipoEnTabla(tablas[grupo], partido.equipoLocal);
+    inicializarEquipoEnTabla(tablas[grupo], partido.equipoVisitante);
+
+    const golesLocal = Number(prediccion.golesLocal);
+    const golesVisitante = Number(prediccion.golesVisitante);
+
+    tablas[grupo][partido.equipoLocal].gf += golesLocal;
+    tablas[grupo][partido.equipoLocal].gc += golesVisitante;
+
+    tablas[grupo][partido.equipoVisitante].gf += golesVisitante;
+    tablas[grupo][partido.equipoVisitante].gc += golesLocal;
+
+    if (golesLocal > golesVisitante) {
+      tablas[grupo][partido.equipoLocal].pts += 3;
+      tablas[grupo][partido.equipoLocal].pg += 1;
+      tablas[grupo][partido.equipoVisitante].pp += 1;
+    } else if (golesLocal < golesVisitante) {
+      tablas[grupo][partido.equipoVisitante].pts += 3;
+      tablas[grupo][partido.equipoVisitante].pg += 1;
+      tablas[grupo][partido.equipoLocal].pp += 1;
+    } else {
+      tablas[grupo][partido.equipoLocal].pts += 1;
+      tablas[grupo][partido.equipoVisitante].pts += 1;
+      tablas[grupo][partido.equipoLocal].pe += 1;
+      tablas[grupo][partido.equipoVisitante].pe += 1;
+    }
+  });
+
+  const posiciones = {};
+
+  Object.keys(tablas).forEach((grupo) => {
+    posiciones[grupo] = Object.values(tablas[grupo])
+      .map((equipo) => ({
+        ...equipo,
+        dg: equipo.gf - equipo.gc
+      }))
+      .sort((a, b) => {
+        if (b.pts !== a.pts) return b.pts - a.pts;
+        if (b.dg !== a.dg) return b.dg - a.dg;
+        if (b.gf !== a.gf) return b.gf - a.gf;
+        return a.nombre.localeCompare(b.nombre);
+      });
+  });
+
+  return posiciones;
+}
+
+function inicializarEquipoEnTabla(tablaGrupo, nombreEquipo) {
+  if (!tablaGrupo[nombreEquipo]) {
+    tablaGrupo[nombreEquipo] = {
+      nombre: nombreEquipo,
+      pts: 0,
+      pg: 0,
+      pe: 0,
+      pp: 0,
+      gf: 0,
+      gc: 0
+    };
+  }
+}
+
+function obtenerMejoresTerceros(posiciones) {
+  const terceros = [];
+
+  Object.keys(posiciones).forEach((grupo) => {
+    const tabla = posiciones[grupo];
+
+    if (tabla && tabla[2]) {
+      terceros.push({
+        ...tabla[2],
+        grupo
+      });
+    }
+  });
+
+  return terceros.sort((a, b) => {
+    if (b.pts !== a.pts) return b.pts - a.pts;
+    if (b.dg !== a.dg) return b.dg - a.dg;
+    if (b.gf !== a.gf) return b.gf - a.gf;
+    return a.nombre.localeCompare(b.nombre);
+  });
+}
+
+function resolverEquipoDesdePronostico(textoOriginal, posiciones, mejoresTerceros, ganadoresPartidos) {
+  if (!textoOriginal) return "Por definir";
+
+  // Ganador de grupo: Group A Winners
+  const ganadorGrupo = textoOriginal.match(/Group ([A-L]) Winners/);
+  if (ganadorGrupo) {
+    const grupo = ganadorGrupo[1];
+    return posiciones[grupo]?.[0]?.nombre || traducirPlaceholder(textoOriginal);
+  }
+
+  // Segundo de grupo: Group A Runners Up
+  const segundoGrupo = textoOriginal.match(/Group ([A-L]) Runners Up/);
+  if (segundoGrupo) {
+    const grupo = segundoGrupo[1];
+    return posiciones[grupo]?.[1]?.nombre || traducirPlaceholder(textoOriginal);
+  }
+
+  // Mejor tercero entre grupos: Group A/B/C/D/E 3rd Place
+  const terceroGrupo = textoOriginal.match(/Group ([A-L](?:\/[A-L])+) 3rd Place/);
+  if (terceroGrupo) {
+    const gruposPermitidos = terceroGrupo[1].split("/");
+
+    const candidato = mejoresTerceros.find((equipo) =>
+      gruposPermitidos.includes(equipo.grupo)
+    );
+
+    return candidato?.nombre || traducirPlaceholder(textoOriginal);
+  }
+
+  // Ganador de partido: Match 73 Winner
+  const ganadorPartido = textoOriginal.match(/Match ([0-9]+) Winner/);
+  if (ganadorPartido) {
+    const numeroPartido = Number(ganadorPartido[1]);
+    return ganadoresPartidos[numeroPartido] || traducirPlaceholder(textoOriginal);
+  }
+
+  // Perdedor de partido: Match 101 Loser
+  const perdedorPartido = textoOriginal.match(/Match ([0-9]+) Loser/);
+  if (perdedorPartido) {
+    const numeroPartido = Number(perdedorPartido[1]);
+    return ganadoresPartidos[`perdedor-${numeroPartido}`] || traducirPlaceholder(textoOriginal);
+  }
+
+  return textoOriginal;
+}
+
+function obtenerGanadorPronosticado(partido, prediccion) {
+  if (!prediccion) return null;
+
+  if (prediccion.equipoAvanza) {
+    return prediccion.equipoAvanza;
+  }
+
+  if (prediccion.golesLocal === null || prediccion.golesVisitante === null) return null;
+  if (prediccion.golesLocal === undefined || prediccion.golesVisitante === undefined) return null;
+
+  const golesLocal = Number(prediccion.golesLocal);
+  const golesVisitante = Number(prediccion.golesVisitante);
+
+  if (golesLocal > golesVisitante) return partido.equipoLocal;
+  if (golesVisitante > golesLocal) return partido.equipoVisitante;
+
+  return null;
+}
+
+function obtenerPerdedorPronosticado(partido, ganador) {
+  if (!ganador) return null;
+
+  if (ganador === partido.equipoLocal) {
+    return partido.equipoVisitante;
+  }
+
+  if (ganador === partido.equipoVisitante) {
+    return partido.equipoLocal;
+  }
+
+  return null;
+}
+
+
+function calcularPartidosConPronosticos(partidos, predicciones) {
+  const posiciones = calcularTablasDeGrupos(partidos, predicciones);
+  const mejoresTerceros = obtenerMejoresTerceros(posiciones);
+
+  const partidosCalculados = partidos
+    .sort((a, b) => a.numero - b.numero)
+    .map((partido) => ({ ...partido }));
+
+  const ganadoresPartidos = {};
+
+  partidosCalculados.forEach((partido) => {
+    if (!esFaseDeGrupos(partido)) {
+      partido.equipoLocal = resolverEquipoDesdePronostico(
+        partido.equipoLocal,
+        posiciones,
+        mejoresTerceros,
+        ganadoresPartidos
+      );
+
+      partido.equipoVisitante = resolverEquipoDesdePronostico(
+        partido.equipoVisitante,
+        posiciones,
+        mejoresTerceros,
+        ganadoresPartidos
+      );
+    }
+
+    const prediccion = predicciones[partido.id];
+
+    if (!esFaseDeGrupos(partido)) {
+      const ganador = obtenerGanadorPronosticado(partido, prediccion);
+      const perdedor = obtenerPerdedorPronosticado(partido, ganador);
+
+      if (ganador) {
+        ganadoresPartidos[partido.numero] = ganador;
+      }
+
+      if (perdedor) {
+        ganadoresPartidos[`perdedor-${partido.numero}`] = perdedor;
+      }
+    }
+  });
+
+  return partidosCalculados;
 }
 
 function renderizarMisPredicciones() {
