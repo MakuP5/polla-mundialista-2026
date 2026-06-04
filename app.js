@@ -56,6 +56,11 @@ const btnGuardarTodo = document.getElementById("btnGuardarTodo");
 const estadoGuardadoGlobal = document.getElementById("estadoGuardadoGlobal");
 const btnRecalcularBracket = document.getElementById("btnRecalcularBracket");
 
+const especialCampeon = document.getElementById("especialCampeon");
+const especialSubcampeon = document.getElementById("especialSubcampeon");
+const especialGoleador = document.getElementById("especialGoleador");
+const especialMejorJugador = document.getElementById("especialMejorJugador");
+
 botonesTabs.forEach((boton) => {
   boton.addEventListener("click", () => {
     const tabId = boton.dataset.tab;
@@ -72,6 +77,7 @@ botonesTabs.forEach((boton) => {
 let usuarioActual = null;
 let partidosGlobales = [];
 let prediccionesUsuario = {};
+let especialesUsuario = {};
 
 btnLogin.addEventListener("click", async () => {
   try {
@@ -293,6 +299,7 @@ async function cargarPartidos() {
     renderizarFaseGrupos(partidosGrupos);
     renderizarBracketEliminacion(partidosEliminacion);
     renderizarMisPredicciones();
+    renderizarPronosticosEspeciales();
 
   } catch (error) {
     console.error("Error cargando partidos:", error);
@@ -576,6 +583,7 @@ async function registrarUsuario(user) {
 
 async function cargarPrediccionesUsuario() {
   prediccionesUsuario = {};
+  especialesUsuario = {};
 
   if (!usuarioActual) {
     return;
@@ -589,6 +597,7 @@ async function cargarPrediccionesUsuario() {
       const data = docSnap.data();
 
       prediccionesUsuario = data.partidos || {};
+      especialesUsuario = data.especiales || {};
 
       estadoGuardadoGlobal.textContent = "Tus pronósticos guardados se cargaron correctamente.";
     } else {
@@ -664,6 +673,11 @@ async function guardarTodosLosPronosticos() {
   }
 
   const pronosticosPartidos = recolectarPronosticosPartidos();
+  const especiales = recolectarPronosticosEspeciales();
+
+  if (!validarPronosticosEspeciales(especiales)) {
+    return;
+  }
 
   if (Object.keys(pronosticosPartidos).length === 0) {
     alert("Todavía no has ingresado ningún pronóstico.");
@@ -679,6 +693,7 @@ async function guardarTodosLosPronosticos() {
       userEmail: usuarioActual.email,
       emailVerificado: usuarioActual.emailVerified,
       partidos: pronosticosPartidos,
+      especiales: especiales,
       puntosTotales: 0,
       aciertosExactos: 0,
       aciertosResultado: 0,
@@ -690,6 +705,7 @@ async function guardarTodosLosPronosticos() {
     }, { merge: true });
 
     prediccionesUsuario = pronosticosPartidos;
+    especialesUsuario = especiales;
 
     estadoGuardadoGlobal.textContent = "Pronósticos guardados correctamente.";
     alert("Todos tus pronósticos fueron guardados correctamente.");
@@ -954,12 +970,7 @@ function calcularTablasDeGrupos(partidos, predicciones) {
         ...equipo,
         dg: equipo.gf - equipo.gc
       }))
-      .sort((a, b) => {
-        if (b.pts !== a.pts) return b.pts - a.pts;
-        if (b.dg !== a.dg) return b.dg - a.dg;
-        if (b.gf !== a.gf) return b.gf - a.gf;
-        return a.nombre.localeCompare(b.nombre);
-      });
+      .sort((a, b) => b.pts - a.pts);
   });
 
   return posiciones;
@@ -1157,7 +1168,78 @@ function renderizarMisPredicciones() {
     });
 }
 
+function obtenerTodosLosEquipos(partidos) {
+  const equipos = new Set();
 
+  partidos
+    .filter(esFaseDeGrupos)
+    .forEach((partido) => {
+      equipos.add(partido.equipoLocal);
+      equipos.add(partido.equipoVisitante);
+    });
 
+  return Array.from(equipos).sort();
+}
+
+function crearOptionEquipo(equipo, seleccionado = "") {
+  const seleccion = obtenerSeleccion(equipo);
+  const selected = equipo === seleccionado ? "selected" : "";
+
+  return `
+    <option value="${equipo}" ${selected}>
+      ${seleccion.nombre}
+    </option>
+  `;
+}
+
+function renderizarPronosticosEspeciales() {
+  if (!especialCampeon || !especialSubcampeon) {
+    return;
+  }
+
+  const equipos = obtenerTodosLosEquipos(partidosGlobales);
+
+  const opcionesCampeon = `
+    <option value="">Selecciona campeón</option>
+    ${equipos.map((equipo) =>
+      crearOptionEquipo(equipo, especialesUsuario.campeon)
+    ).join("")}
+  `;
+
+  const opcionesSubcampeon = `
+    <option value="">Selecciona subcampeón</option>
+    ${equipos.map((equipo) =>
+      crearOptionEquipo(equipo, especialesUsuario.subcampeon)
+    ).join("")}
+  `;
+
+  especialCampeon.innerHTML = opcionesCampeon;
+  especialSubcampeon.innerHTML = opcionesSubcampeon;
+
+  especialGoleador.value = especialesUsuario.goleador || "";
+  especialMejorJugador.value = especialesUsuario.mejorJugador || "";
+}
+
+function recolectarPronosticosEspeciales() {
+  return {
+    campeon: especialCampeon ? especialCampeon.value || "" : "",
+    subcampeon: especialSubcampeon ? especialSubcampeon.value || "" : "",
+    goleador: especialGoleador ? especialGoleador.value.trim() : "",
+    mejorJugador: especialMejorJugador ? especialMejorJugador.value.trim() : ""
+  };
+}
+
+function validarPronosticosEspeciales(especiales) {
+  if (
+    especiales.campeon &&
+    especiales.subcampeon &&
+    especiales.campeon === especiales.subcampeon
+  ) {
+    alert("El campeón y subcampeón no pueden ser el mismo equipo.");
+    return false;
+  }
+
+  return true;
+}
 
 //cargarPartidos();

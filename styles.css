@@ -896,3 +896,83 @@ button {
 .btn-recalcular-bracket:hover {
   background: rgba(255, 209, 102, 0.15);
 }
+.pronosticos-especiales-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.especiales-header {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  margin-bottom: 18px;
+}
+
+.especiales-icon {
+  width: 58px;
+  height: 58px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #ffd166;
+  color: #111;
+  border-radius: 18px;
+  font-size: 2rem;
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.35);
+}
+
+.especiales-header h2 {
+  margin: 0;
+}
+
+.especiales-header p {
+  color: #dbeafe;
+  margin: 4px 0 0;
+}
+
+.especiales-alerta {
+  background: rgba(255, 209, 102, 0.14);
+  border: 1px solid rgba(255, 209, 102, 0.55);
+  color: #fff7d6;
+  padding: 14px;
+  border-radius: 14px;
+  margin: 18px 0;
+}
+
+.especiales-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.especial-campo label {
+  display: block;
+  color: #9fd3ff;
+  font-weight: bold;
+  margin-bottom: 6px;
+  font-size: 0.9rem;
+}
+
+.especial-campo input,
+.especial-campo select {
+  width: 100%;
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px solid #47b5ff;
+  background: #07111f;
+  color: #ffffff;
+}
+
+.especial-campo input::placeholder {
+  color: #9fb6ce;
+}
+
+@media (max-width: 760px) {
+  .especiales-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .especiales-header {
+    align-items: flex-start;
+  }
+}

@@ -74,6 +74,7 @@
       <button class="tab-btn active" data-tab="tab-grupos">Fase de grupos</button>
       <button class="tab-btn" data-tab="tab-eliminacion">Eliminación directa</button>
       <button class="tab-btn" data-tab="tab-mis-predicciones">Mis predicciones</button>
+      <button class="tab-btn" data-tab="tab-pronosticos-especiales">Pronósticos especiales</button>
       <button class="tab-btn" data-tab="tab-ranking">Ranking</button>
       <button class="tab-btn" data-tab="tab-reglamento">Reglamento</button>
     </nav>
@@ -114,6 +115,58 @@
     <h2>Mis predicciones</h2>
     <div id="misPrediccionesContainer">
       <p>Inicia sesión para ver tus predicciones guardadas.</p>
+    </div>
+  </div>
+</section>
+
+<section id="tab-pronosticos-especiales" class="tab-content">
+  <div class="card pronosticos-especiales-card">
+    <div class="especiales-header">
+      <span class="especiales-icon">🏆</span>
+      <div>
+        <h2>Pronósticos especiales</h2>
+        <p>Completa los pronósticos adicionales del reglamento.</p>
+      </div>
+    </div>
+
+    <div class="especiales-alerta">
+      <strong>Importante:</strong>
+      estos datos se guardan junto con todos tus marcadores usando el botón
+      <strong>“Guardar todos mis pronósticos”</strong>.
+    </div>
+
+    <div class="especiales-grid">
+      <div class="especial-campo">
+        <label for="especialCampeon">Campeón</label>
+        <select id="especialCampeon">
+          <option value="">Selecciona campeón</option>
+        </select>
+      </div>
+
+      <div class="especial-campo">
+        <label for="especialSubcampeon">Subcampeón</label>
+        <select id="especialSubcampeon">
+          <option value="">Selecciona subcampeón</option>
+        </select>
+      </div>
+
+      <div class="especial-campo">
+        <label for="especialGoleador">Goleador del torneo</label>
+        <input 
+          type="text" 
+          id="especialGoleador" 
+          placeholder="Ejemplo: Kylian Mbappé"
+        >
+      </div>
+
+      <div class="especial-campo">
+        <label for="especialMejorJugador">Mejor jugador del torneo</label>
+        <input 
+          type="text" 
+          id="especialMejorJugador" 
+          placeholder="Ejemplo: Lionel Messi"
+        >
+      </div>
     </div>
   </div>
 </section>
