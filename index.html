@@ -71,12 +71,12 @@
   <main class="container">
 
     <nav class="tabs-menu">
+      <button class="tab-btn" data-tab="tab-reglamento">Reglamento</button>
       <button class="tab-btn active" data-tab="tab-grupos">Fase de grupos</button>
       <button class="tab-btn" data-tab="tab-eliminacion">Eliminación directa</button>
-      <button class="tab-btn" data-tab="tab-mis-predicciones">Mis predicciones</button>
       <button class="tab-btn" data-tab="tab-ranking">Ranking</button>
-      <button class="tab-btn" data-tab="tab-reglamento">Reglamento</button>
     </nav>
+
 <div class="guardar-global-panel">
   <button id="btnGuardarTodo" class="btn-guardar-todo">
     💾 Guardar todos mis pronósticos
@@ -85,77 +85,6 @@
     Completa tus marcadores y guarda tu polla antes del inicio del Mundial.
   </p>
 </div>
-
-<section id="tab-grupos" class="tab-content active">
-  <div class="card">
-    <h2>Fase de grupos</h2>
-    <div id="gruposContainer">
-      <p>Cargando partidos de grupos...</p>
-    </div>
-  </div>
-</section>
-
-<section id="tab-eliminacion" class="tab-content">
-  <div class="card">
-    <h2>Eliminación directa <span class="hint-scroll">← desliza →</span></h2>
-
-    <button id="btnRecalcularBracket" class="btn-recalcular-bracket">
-      🔄 Recalcular llaves con mis pronósticos
-    </button>
-
-    <div class="bracket-scroll">
-      <div id="bracketContainer">
-        <p>Cargando eliminación directa...</p>
-      </div>
-    </div>
-
-    <div class="especiales-eliminacion">
-      <h3>Pronósticos especiales</h3>
-      <p>
-        Estos datos también forman parte del reglamento y se guardan junto con todos tus pronósticos.
-      </p>
-
-      <div class="especiales-eliminacion-grid">
-        <div class="especial-campo">
-          <label for="especialGoleador">Goleador del torneo</label>
-          <input 
-            type="text" 
-            id="especialGoleador" 
-            placeholder="Ejemplo: Kylian Mbappé"
-          >
-        </div>
-
-        <div class="especial-campo">
-          <label for="especialMejorJugador">Mejor jugador del torneo</label>
-          <input 
-            type="text" 
-            id="especialMejorJugador" 
-            placeholder="Ejemplo: Lionel Messi"
-          >
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<section id="tab-mis-predicciones" class="tab-content">
-  <div class="card">
-    <h2>Mis predicciones</h2>
-    <div id="misPrediccionesContainer">
-      <p>Inicia sesión para ver tus predicciones guardadas.</p>
-    </div>
-  </div>
-</section>
-
-<section id="tab-ranking" class="tab-content">
-  <div class="card">
-    <h2>Ranking general</h2>
-    <div id="rankingContainer">
-      <p>El ranking estará disponible cuando se registren resultados.</p>
-    </div>
-  </div>
-</section>
-
 
 <section id="tab-reglamento" class="tab-content">
   <div class="card reglamento-card">
@@ -272,6 +201,70 @@
     </div>
   </div>
 </section>
+
+<section id="tab-grupos" class="tab-content active">
+  <div class="card">
+    <h2>Fase de grupos</h2>
+    <div id="gruposContainer">
+      <p>Cargando partidos de grupos...</p>
+    </div>
+  </div>
+</section>
+
+<section id="tab-eliminacion" class="tab-content">
+  <div class="card">
+    <h2>Eliminación directa <span class="hint-scroll">← desliza →</span></h2>
+
+    <button id="btnRecalcularBracket" class="btn-recalcular-bracket">
+      🔄 Recalcular llaves con mis pronósticos
+    </button>
+
+    <div class="bracket-scroll">
+      <div id="bracketContainer">
+        <p>Cargando eliminación directa...</p>
+      </div>
+    </div>
+
+    <div class="especiales-eliminacion">
+      <h3>Pronósticos especiales</h3>
+      <p>
+        Estos datos también forman parte del reglamento y se guardan junto con todos tus pronósticos.
+      </p>
+
+      <div class="especiales-eliminacion-grid">
+        <div class="especial-campo">
+          <label for="especialGoleador">Goleador del torneo</label>
+          <input 
+            type="text" 
+            id="especialGoleador" 
+            placeholder="Ejemplo: Kylian Mbappé"
+          >
+        </div>
+
+        <div class="especial-campo">
+          <label for="especialMejorJugador">Mejor jugador del torneo</label>
+          <input 
+            type="text" 
+            id="especialMejorJugador" 
+            placeholder="Ejemplo: Lionel Messi"
+          >
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="tab-ranking" class="tab-content">
+  <div class="card">
+    <h2>Ranking general</h2>
+    <div id="rankingContainer">
+      <p>El ranking estará disponible cuando se registren resultados.</p>
+    </div>
+  </div>
+</section>
+
+
+
 
 </main>
 
