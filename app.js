@@ -58,6 +58,7 @@ const btnRecalcularBracket = document.getElementById("btnRecalcularBracket");
 
 const especialCampeon = document.getElementById("especialCampeon");
 const especialSubcampeon = document.getElementById("especialSubcampeon");
+
 const especialGoleador = document.getElementById("especialGoleador");
 const especialMejorJugador = document.getElementById("especialMejorJugador");
 
@@ -114,21 +115,27 @@ btnRecuperarPassword.addEventListener("click", async () => {
 });
 
 btnRecalcularBracket.addEventListener("click", () => {
-  const pronosticosTemporales = recolectarPronosticosPartidos();
+  const pronosticosGrupos = recolectarPronosticosFaseGrupos();
+
+  if (!pronosticosGrupos) {
+    return;
+  }
 
   const partidosCalculados = calcularPartidosConPronosticos(
     partidosGlobales,
     {
       ...prediccionesUsuario,
-      ...pronosticosTemporales
+      ...pronosticosGrupos
     }
   );
 
-  const partidosEliminacion = partidosCalculados.filter((partido) => !esFaseDeGrupos(partido));
+  const partidosEliminacion = partidosCalculados.filter(
+    (partido) => !esFaseDeGrupos(partido)
+  );
 
   renderizarBracketEliminacion(partidosEliminacion);
 
-  alert("Las llaves se recalcularon con los pronósticos ingresados.");
+  alert("Las llaves se recalcularon con los pronósticos de fase de grupos.");
 });
 
 btnRegistroEmail.addEventListener("click", async () => {
@@ -341,55 +348,125 @@ function actualizarPanelUsuario(user) {
 
 function obtenerSeleccion(nombreOriginal) {
   const selecciones = {
-    "Algeria": { nombre: "Argelia", codigo: "dz" },
+    // América
     "Argentina": { nombre: "Argentina", codigo: "ar" },
-    "Australia": { nombre: "Australia", codigo: "au" },
-    "Austria": { nombre: "Austria", codigo: "at" },
-    "Belgium": { nombre: "Bélgica", codigo: "be" },
-    "Bosnia and Herzegovina": { nombre: "Bosnia y Herzegovina", codigo: "ba" },
     "Brazil": { nombre: "Brasil", codigo: "br" },
+    "Brasil": { nombre: "Brasil", codigo: "br" },
     "Canada": { nombre: "Canadá", codigo: "ca" },
-    "Cape Verde": { nombre: "Cabo Verde", codigo: "cv" },
+    "Canadá": { nombre: "Canadá", codigo: "ca" },
+    "Chile": { nombre: "Chile", codigo: "cl" },
     "Colombia": { nombre: "Colombia", codigo: "co" },
-    "Congo DR": { nombre: "República Democrática del Congo", codigo: "cd" },
-    "Croatia": { nombre: "Croacia", codigo: "hr" },
-    "Curaçao": { nombre: "Curazao", codigo: "cw" },
-    "Czechia": { nombre: "Chequia", codigo: "cz" },
+    "Costa Rica": { nombre: "Costa Rica", codigo: "cr" },
     "Ecuador": { nombre: "Ecuador", codigo: "ec" },
-    "Egypt": { nombre: "Egipto", codigo: "eg" },
-    "England": { nombre: "Inglaterra", codigo: "gb-eng" },
-    "France": { nombre: "Francia", codigo: "fr" },
-    "Germany": { nombre: "Alemania", codigo: "de" },
-    "Ghana": { nombre: "Ghana", codigo: "gh" },
-    "Haiti": { nombre: "Haití", codigo: "ht" },
-    "Iran": { nombre: "Irán", codigo: "ir" },
-    "Iraq": { nombre: "Irak", codigo: "iq" },
-    "Ivory Coast": { nombre: "Costa de Marfil", codigo: "ci" },
-    "Japan": { nombre: "Japón", codigo: "jp" },
-    "Jordan": { nombre: "Jordania", codigo: "jo" },
     "Mexico": { nombre: "México", codigo: "mx" },
-    "Morocco": { nombre: "Marruecos", codigo: "ma" },
-    "Netherlands": { nombre: "Países Bajos", codigo: "nl" },
-    "New Zealand": { nombre: "Nueva Zelanda", codigo: "nz" },
-    "Norway": { nombre: "Noruega", codigo: "no" },
+    "México": { nombre: "México", codigo: "mx" },
     "Panama": { nombre: "Panamá", codigo: "pa" },
+    "Panamá": { nombre: "Panamá", codigo: "pa" },
     "Paraguay": { nombre: "Paraguay", codigo: "py" },
-    "Portugal": { nombre: "Portugal", codigo: "pt" },
-    "Qatar": { nombre: "Catar", codigo: "qa" },
-    "Saudi Arabia": { nombre: "Arabia Saudita", codigo: "sa" },
-    "Scotland": { nombre: "Escocia", codigo: "gb-sct" },
-    "Senegal": { nombre: "Senegal", codigo: "sn" },
-    "South Africa": { nombre: "Sudáfrica", codigo: "za" },
-    "South Korea": { nombre: "Corea del Sur", codigo: "kr" },
-    "Spain": { nombre: "España", codigo: "es" },
-    "Sweden": { nombre: "Suecia", codigo: "se" },
-    "Switzerland": { nombre: "Suiza", codigo: "ch" },
-    "Tunisia": { nombre: "Túnez", codigo: "tn" },
-    "Türkiye": { nombre: "Turquía", codigo: "tr" },
+    "Peru": { nombre: "Perú", codigo: "pe" },
+    "Perú": { nombre: "Perú", codigo: "pe" },
+    "Uruguay": { nombre: "Uruguay", codigo: "uy" },
     "USA": { nombre: "Estados Unidos", codigo: "us" },
     "United States": { nombre: "Estados Unidos", codigo: "us" },
-    "Uruguay": { nombre: "Uruguay", codigo: "uy" },
-    "Uzbekistan": { nombre: "Uzbekistán", codigo: "uz" }
+    "Estados Unidos": { nombre: "Estados Unidos", codigo: "us" },
+
+    // Europa
+    "Austria": { nombre: "Austria", codigo: "at" },
+    "Belgium": { nombre: "Bélgica", codigo: "be" },
+    "Bélgica": { nombre: "Bélgica", codigo: "be" },
+    "Bosnia and Herzegovina": { nombre: "Bosnia y Herzegovina", codigo: "ba" },
+    "Bosnia y Herzegovina": { nombre: "Bosnia y Herzegovina", codigo: "ba" },
+    "Croatia": { nombre: "Croacia", codigo: "hr" },
+    "Croacia": { nombre: "Croacia", codigo: "hr" },
+    "Czechia": { nombre: "Chequia", codigo: "cz" },
+    "Chequia": { nombre: "Chequia", codigo: "cz" },
+    "Denmark": { nombre: "Dinamarca", codigo: "dk" },
+    "Dinamarca": { nombre: "Dinamarca", codigo: "dk" },
+    "England": { nombre: "Inglaterra", codigo: "gb-eng" },
+    "Inglaterra": { nombre: "Inglaterra", codigo: "gb-eng" },
+    "France": { nombre: "Francia", codigo: "fr" },
+    "Francia": { nombre: "Francia", codigo: "fr" },
+    "Germany": { nombre: "Alemania", codigo: "de" },
+    "Alemania": { nombre: "Alemania", codigo: "de" },
+    "Italy": { nombre: "Italia", codigo: "it" },
+    "Italia": { nombre: "Italia", codigo: "it" },
+    "Netherlands": { nombre: "Países Bajos", codigo: "nl" },
+    "Países Bajos": { nombre: "Países Bajos", codigo: "nl" },
+    "Norway": { nombre: "Noruega", codigo: "no" },
+    "Noruega": { nombre: "Noruega", codigo: "no" },
+    "Portugal": { nombre: "Portugal", codigo: "pt" },
+    "Scotland": { nombre: "Escocia", codigo: "gb-sct" },
+    "Escocia": { nombre: "Escocia", codigo: "gb-sct" },
+    "Serbia": { nombre: "Serbia", codigo: "rs" },
+    "Spain": { nombre: "España", codigo: "es" },
+    "España": { nombre: "España", codigo: "es" },
+    "Sweden": { nombre: "Suecia", codigo: "se" },
+    "Suecia": { nombre: "Suecia", codigo: "se" },
+    "Switzerland": { nombre: "Suiza", codigo: "ch" },
+    "Suiza": { nombre: "Suiza", codigo: "ch" },
+    "Türkiye": { nombre: "Turquía", codigo: "tr" },
+    "Turkey": { nombre: "Turquía", codigo: "tr" },
+    "Turquía": { nombre: "Turquía", codigo: "tr" },
+    "Ukraine": { nombre: "Ucrania", codigo: "ua" },
+    "Ucrania": { nombre: "Ucrania", codigo: "ua" },
+    "Wales": { nombre: "Gales", codigo: "gb-wls" },
+    "Gales": { nombre: "Gales", codigo: "gb-wls" },
+
+    // África
+    "Algeria": { nombre: "Argelia", codigo: "dz" },
+    "Argelia": { nombre: "Argelia", codigo: "dz" },
+    "Cameroon": { nombre: "Camerún", codigo: "cm" },
+    "Camerún": { nombre: "Camerún", codigo: "cm" },
+    "Cape Verde": { nombre: "Cabo Verde", codigo: "cv" },
+    "Cabo Verde": { nombre: "Cabo Verde", codigo: "cv" },
+    "Congo DR": { nombre: "República Democrática del Congo", codigo: "cd" },
+    "República Democrática del Congo": { nombre: "República Democrática del Congo", codigo: "cd" },
+    "Egypt": { nombre: "Egipto", codigo: "eg" },
+    "Egipto": { nombre: "Egipto", codigo: "eg" },
+    "Ghana": { nombre: "Ghana", codigo: "gh" },
+    "Ivory Coast": { nombre: "Costa de Marfil", codigo: "ci" },
+    "Costa de Marfil": { nombre: "Costa de Marfil", codigo: "ci" },
+    "Morocco": { nombre: "Marruecos", codigo: "ma" },
+    "Marruecos": { nombre: "Marruecos", codigo: "ma" },
+    "Nigeria": { nombre: "Nigeria", codigo: "ng" },
+    "Senegal": { nombre: "Senegal", codigo: "sn" },
+    "South Africa": { nombre: "Sudáfrica", codigo: "za" },
+    "Sudáfrica": { nombre: "Sudáfrica", codigo: "za" },
+    "Tunisia": { nombre: "Túnez", codigo: "tn" },
+    "Túnez": { nombre: "Túnez", codigo: "tn" },
+
+    // Asia / Oceanía
+    "Australia": { nombre: "Australia", codigo: "au" },
+    "China": { nombre: "China", codigo: "cn" },
+    "Iran": { nombre: "Irán", codigo: "ir" },
+    "Irán": { nombre: "Irán", codigo: "ir" },
+    "Iraq": { nombre: "Irak", codigo: "iq" },
+    "Irak": { nombre: "Irak", codigo: "iq" },
+    "Japan": { nombre: "Japón", codigo: "jp" },
+    "Japón": { nombre: "Japón", codigo: "jp" },
+    "Jordan": { nombre: "Jordania", codigo: "jo" },
+    "Jordania": { nombre: "Jordania", codigo: "jo" },
+    "New Zealand": { nombre: "Nueva Zelanda", codigo: "nz" },
+    "Nueva Zelanda": { nombre: "Nueva Zelanda", codigo: "nz" },
+    "Qatar": { nombre: "Catar", codigo: "qa" },
+    "Catar": { nombre: "Catar", codigo: "qa" },
+    "Saudi Arabia": { nombre: "Arabia Saudita", codigo: "sa" },
+    "Arabia Saudita": { nombre: "Arabia Saudita", codigo: "sa" },
+    "South Korea": { nombre: "Corea del Sur", codigo: "kr" },
+    "Korea Republic": { nombre: "Corea del Sur", codigo: "kr" },
+    "Corea del Sur": { nombre: "Corea del Sur", codigo: "kr" },
+    "United Arab Emirates": { nombre: "Emiratos Árabes Unidos", codigo: "ae" },
+    "Emiratos Árabes Unidos": { nombre: "Emiratos Árabes Unidos", codigo: "ae" },
+    "Uzbekistan": { nombre: "Uzbekistán", codigo: "uz" },
+    "Uzbekistán": { nombre: "Uzbekistán", codigo: "uz" },
+
+    // Concacaf / Caribe
+    "Curaçao": { nombre: "Curazao", codigo: "cw" },
+    "Curazao": { nombre: "Curazao", codigo: "cw" },
+    "Haiti": { nombre: "Haití", codigo: "ht" },
+    "Haití": { nombre: "Haití", codigo: "ht" },
+    "Honduras": { nombre: "Honduras", codigo: "hn" },
+    "Jamaica": { nombre: "Jamaica", codigo: "jm" }
   };
 
   if (selecciones[nombreOriginal]) {
@@ -413,6 +490,7 @@ function crearBandera(seleccion) {
       src="https://flagcdn.com/${seleccion.codigo}.svg" 
       alt="Bandera de ${seleccion.nombre}"
       loading="lazy"
+      onerror="this.outerHTML='<span class=&quot;bandera-placeholder&quot;>⚽</span>'"
     >
   `;
 }
@@ -615,25 +693,95 @@ function obtenerNombreEquipoDesdeTarjeta(partidoId, tipo) {
   return elemento ? elemento.textContent.trim() : null;
 }
 
+
 function recolectarPronosticosPartidos() {
   const pronosticos = {};
+  const errores = [];
 
   partidosGlobales.forEach((partido) => {
     const inputLocal = document.getElementById(`local-${partido.id}`);
     const inputVisitante = document.getElementById(`visitante-${partido.id}`);
     const selectAvanza = document.getElementById(`avanza-${partido.id}`);
-    const nombreLocalMostrado = obtenerNombreEquipoDesdeInput(partido.id, "local") || partido.equipoLocal;
-    const nombreVisitanteMostrado = obtenerNombreEquipoDesdeInput(partido.id, "visitante") || partido.equipoVisitante;
-
 
     if (!inputLocal || !inputVisitante) {
       return;
     }
 
-    const golesLocal = inputLocal.value;
-    const golesVisitante = inputVisitante.value;
+    const golesLocalTexto = inputLocal.value.trim();
+    const golesVisitanteTexto = inputVisitante.value.trim();
 
-    if (golesLocal === "" && golesVisitante === "") {
+    // Si el partido está totalmente vacío, no se guarda.
+    if (golesLocalTexto === "" && golesVisitanteTexto === "") {
+      return;
+    }
+
+    // Si solo llenó un lado, marcamos error.
+    if (golesLocalTexto === "" || golesVisitanteTexto === "") {
+      errores.push(`Partido ${partido.numero}: completa ambos marcadores.`);
+      return;
+    }
+
+    const golesLocal = Number(golesLocalTexto);
+    const golesVisitante = Number(golesVisitanteTexto);
+
+    if (
+      Number.isNaN(golesLocal) ||
+      Number.isNaN(golesVisitante) ||
+      golesLocal < 0 ||
+      golesVisitante < 0
+    ) {
+      errores.push(`Partido ${partido.numero}: el marcador debe ser un número válido.`);
+      return;
+    }
+
+    const esEliminacion = !esFaseDeGrupos(partido);
+
+    const equipoLocalMostrado =
+      obtenerNombreEquipoDesdeInput(partido.id, "local") || partido.equipoLocal;
+
+    const equipoVisitanteMostrado =
+      obtenerNombreEquipoDesdeInput(partido.id, "visitante") || partido.equipoVisitante;
+
+    const equipoAvanza = selectAvanza ? selectAvanza.value : "";
+
+    // Si es eliminación directa y el marcador está empatado, debe elegir quién avanza.
+    if (esEliminacion && golesLocal === golesVisitante && !equipoAvanza) {
+      errores.push(
+        `Partido ${partido.numero}: hay empate, selecciona el equipo que avanza.`
+      );
+      return;
+    }
+
+    // Si es eliminación directa y hay ganador por marcador, podemos inferir quién avanza.
+    let equipoAvanzaFinal = null;
+
+    if (esEliminacion) {
+      if (equipoAvanza) {
+        equipoAvanzaFinal = equipoAvanza;
+      } else if (golesLocal > golesVisitante) {
+        equipoAvanzaFinal = equipoLocalMostrado;
+      } else if (golesVisitante > golesLocal) {
+        equipoAvanzaFinal = equipoVisitanteMostrado;
+      }
+    }
+
+    // No guardar partidos de eliminación si todavía tienen equipos genéricos.
+    if (
+      esEliminacion &&
+      (
+        equipoLocalMostrado.includes("Ganador") ||
+        equipoVisitanteMostrado.includes("Ganador") ||
+        equipoLocalMostrado.includes("Segundo") ||
+        equipoVisitanteMostrado.includes("Segundo") ||
+        equipoLocalMostrado.includes("Mejor tercero") ||
+        equipoVisitanteMostrado.includes("Mejor tercero") ||
+        equipoLocalMostrado.includes("Por definir") ||
+        equipoVisitanteMostrado.includes("Por definir")
+      )
+    ) {
+      errores.push(
+        `Partido ${partido.numero}: primero recalcula las llaves para definir los equipos.`
+      );
       return;
     }
 
@@ -641,16 +789,27 @@ function recolectarPronosticosPartidos() {
       partidoId: partido.id,
       numero: partido.numero,
       fase: partido.fase,
+      grupo: partido.grupo || null,
+
       equipoLocal: equipoLocalMostrado,
       equipoVisitante: equipoVisitanteMostrado,
-      grupo: partido.grupo || null,
-      golesLocal: golesLocal === "" ? null : Number(golesLocal),
-      golesVisitante: golesVisitante === "" ? null : Number(golesVisitante),
-      equipoAvanza: selectAvanza ? selectAvanza.value || null : null,
+      equipoLocalMostrado: equipoLocalMostrado,
+      equipoVisitanteMostrado: equipoVisitanteMostrado,
+
+      golesLocal: golesLocal,
+      golesVisitante: golesVisitante,
+
+      equipoAvanza: equipoAvanzaFinal,
+
       puntos: 0,
       estadoPuntuacion: "pendiente"
     };
   });
+
+  if (errores.length > 0) {
+    alert("Revisa estos detalles:\n\n" + errores.join("\n"));
+    return null;
+  }
 
   return pronosticos;
 }
@@ -673,6 +832,9 @@ async function guardarTodosLosPronosticos() {
   }
 
   const pronosticosPartidos = recolectarPronosticosPartidos();
+  if (!pronosticosPartidos) {
+  return;
+}
   const especiales = recolectarPronosticosEspeciales();
 
   if (!validarPronosticosEspeciales(especiales)) {
@@ -1196,50 +1358,103 @@ function renderizarPronosticosEspeciales() {
   if (!especialCampeon || !especialSubcampeon) {
     return;
   }
-
-  const equipos = obtenerTodosLosEquipos(partidosGlobales);
-
-  const opcionesCampeon = `
-    <option value="">Selecciona campeón</option>
-    ${equipos.map((equipo) =>
-      crearOptionEquipo(equipo, especialesUsuario.campeon)
-    ).join("")}
-  `;
-
-  const opcionesSubcampeon = `
-    <option value="">Selecciona subcampeón</option>
-    ${equipos.map((equipo) =>
-      crearOptionEquipo(equipo, especialesUsuario.subcampeon)
-    ).join("")}
-  `;
-
-  especialCampeon.innerHTML = opcionesCampeon;
-  especialSubcampeon.innerHTML = opcionesSubcampeon;
-
   especialGoleador.value = especialesUsuario.goleador || "";
   especialMejorJugador.value = especialesUsuario.mejorJugador || "";
 }
 
 function recolectarPronosticosEspeciales() {
   return {
-    campeon: especialCampeon ? especialCampeon.value || "" : "",
-    subcampeon: especialSubcampeon ? especialSubcampeon.value || "" : "",
+
     goleador: especialGoleador ? especialGoleador.value.trim() : "",
     mejorJugador: especialMejorJugador ? especialMejorJugador.value.trim() : ""
   };
 }
 
+function obtenerNombreEquipoDesdeInput(partidoId, tipo) {
+  const selector = `[data-equipo-${tipo}="${partidoId}"]`;
+  const elemento = document.querySelector(selector);
+
+  return elemento ? elemento.textContent.trim() : null;
+}
+
+
+function recolectarPronosticosFaseGrupos() {
+  const pronosticos = {};
+  const errores = [];
+
+  partidosGlobales
+    .filter(esFaseDeGrupos)
+    .forEach((partido) => {
+      const inputLocal = document.getElementById(`local-${partido.id}`);
+      const inputVisitante = document.getElementById(`visitante-${partido.id}`);
+
+      if (!inputLocal || !inputVisitante) {
+        return;
+      }
+
+      const golesLocalTexto = inputLocal.value.trim();
+      const golesVisitanteTexto = inputVisitante.value.trim();
+
+      if (golesLocalTexto === "" && golesVisitanteTexto === "") {
+        return;
+      }
+
+      if (golesLocalTexto === "" || golesVisitanteTexto === "") {
+        errores.push(`Partido ${partido.numero}: completa ambos marcadores.`);
+        return;
+      }
+
+      const golesLocal = Number(golesLocalTexto);
+      const golesVisitante = Number(golesVisitanteTexto);
+
+      if (
+        Number.isNaN(golesLocal) ||
+        Number.isNaN(golesVisitante) ||
+        golesLocal < 0 ||
+        golesVisitante < 0
+      ) {
+        errores.push(`Partido ${partido.numero}: marcador inválido.`);
+        return;
+      }
+
+      pronosticos[partido.id] = {
+        partidoId: partido.id,
+        numero: partido.numero,
+        fase: partido.fase,
+        grupo: partido.grupo || null,
+        equipoLocal: partido.equipoLocal,
+        equipoVisitante: partido.equipoVisitante,
+        golesLocal,
+        golesVisitante,
+        equipoAvanza: null,
+        puntos: 0,
+        estadoPuntuacion: "pendiente"
+      };
+    });
+
+  if (errores.length > 0) {
+    alert("Revisa estos detalles:\n\n" + errores.join("\n"));
+    return null;
+  }
+
+  return pronosticos;
+}
+
 function validarPronosticosEspeciales(especiales) {
-  if (
-    especiales.campeon &&
-    especiales.subcampeon &&
-    especiales.campeon === especiales.subcampeon
-  ) {
-    alert("El campeón y subcampeón no pueden ser el mismo equipo.");
+  if (!especiales) {
+    return true;
+  }
+
+  if (especiales.goleador && especiales.goleador.length < 2) {
+    alert("El nombre del goleador debe tener al menos 2 caracteres.");
+    return false;
+  }
+
+  if (especiales.mejorJugador && especiales.mejorJugador.length < 2) {
+    alert("El nombre del mejor jugador debe tener al menos 2 caracteres.");
     return false;
   }
 
   return true;
 }
-
 //cargarPartidos();
