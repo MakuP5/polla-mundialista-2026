@@ -26,7 +26,6 @@ import {
 
 const gruposContainer = document.getElementById("gruposContainer");
 const bracketContainer = document.getElementById("bracketContainer");
-const misPrediccionesContainer = document.getElementById("misPrediccionesContainer");
 const rankingContainer = document.getElementById("rankingContainer");
 
 const btnLogin = document.getElementById("btnLogin");
@@ -61,18 +60,25 @@ const especialSubcampeon = document.getElementById("especialSubcampeon");
 
 const especialGoleador = document.getElementById("especialGoleador");
 const especialMejorJugador = document.getElementById("especialMejorJugador");
+const estadoEspeciales = document.getElementById("estadoEspeciales");
 
 botonesTabs.forEach((boton) => {
   boton.addEventListener("click", () => {
     const tabId = boton.dataset.tab;
+    const tabDestino = document.getElementById(tabId);
+
+    if (!tabDestino) {
+      console.warn(`No existe la pestaña con id: ${tabId}`);
+      return;
+    }
 
     botonesTabs.forEach((btn) => btn.classList.remove("active"));
     contenidosTabs.forEach((contenido) => contenido.classList.remove("active"));
 
     boton.classList.add("active");
-    document.getElementById(tabId).classList.add("active");
+    tabDestino.classList.add("active");
   });
-});  
+});
 
 
 let usuarioActual = null;
@@ -305,7 +311,6 @@ async function cargarPartidos() {
 
     renderizarFaseGrupos(partidosGrupos);
     renderizarBracketEliminacion(partidosEliminacion);
-    renderizarMisPredicciones();
     renderizarPronosticosEspeciales();
 
   } catch (error) {
@@ -868,8 +873,11 @@ async function guardarTodosLosPronosticos() {
 
     prediccionesUsuario = pronosticosPartidos;
     especialesUsuario = especiales;
+    
 
     estadoGuardadoGlobal.textContent = "Pronósticos guardados correctamente.";
+    renderizarPronosticosEspeciales();
+
     alert("Todos tus pronósticos fueron guardados correctamente.");
 
     await cargarPartidos();
@@ -1300,36 +1308,6 @@ function calcularPartidosConPronosticos(partidos, predicciones) {
   return partidosCalculados;
 }
 
-function renderizarMisPredicciones() {
-  if (!usuarioActual) {
-    misPrediccionesContainer.innerHTML = `
-      <p>Inicia sesión para ver tus predicciones guardadas.</p>
-    `;
-    return;
-  }
-
-  const idsPredichos = Object.keys(prediccionesUsuario);
-
-  if (idsPredichos.length === 0) {
-    misPrediccionesContainer.innerHTML = `
-      <p>Aún no has guardado predicciones.</p>
-    `;
-    return;
-  }
-
-  const partidosConPrediccion = partidosGlobales.filter((partido) =>
-    idsPredichos.includes(partido.id)
-  );
-
-  misPrediccionesContainer.innerHTML = "";
-
-  partidosConPrediccion
-    .sort((a, b) => a.numero - b.numero)
-    .forEach((partido) => {
-      misPrediccionesContainer.innerHTML += crearTarjetaPartido(partido, false);
-    });
-}
-
 function obtenerTodosLosEquipos(partidos) {
   const equipos = new Set();
 
@@ -1355,11 +1333,27 @@ function crearOptionEquipo(equipo, seleccionado = "") {
 }
 
 function renderizarPronosticosEspeciales() {
-  if (!especialCampeon || !especialSubcampeon) {
+  if (!especialGoleador || !especialMejorJugador) {
     return;
   }
-  especialGoleador.value = especialesUsuario.goleador || "";
-  especialMejorJugador.value = especialesUsuario.mejorJugador || "";
+
+  const goleadorGuardado = especialesUsuario.goleador || "";
+  const mejorJugadorGuardado = especialesUsuario.mejorJugador || "";
+
+  especialGoleador.value = goleadorGuardado;
+  especialMejorJugador.value = mejorJugadorGuardado;
+
+  if (estadoEspeciales) {
+    if (goleadorGuardado || mejorJugadorGuardado) {
+      estadoEspeciales.textContent = "Guardado";
+      estadoEspeciales.classList.remove("estado-pendiente");
+      estadoEspeciales.classList.add("estado-guardado");
+    } else {
+      estadoEspeciales.textContent = "Sin guardar";
+      estadoEspeciales.classList.remove("estado-guardado");
+      estadoEspeciales.classList.add("estado-pendiente");
+    }
+  }
 }
 
 function recolectarPronosticosEspeciales() {

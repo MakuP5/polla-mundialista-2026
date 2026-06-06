@@ -1031,3 +1031,34 @@ button {
     grid-template-columns: 1fr;
   }
 }
+
+.especiales-header-linea {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.especiales-header-linea h3 {
+  margin-top: 0;
+  margin-bottom: 6px;
+}
+
+.especiales-header-linea p {
+  margin: 0;
+}
+
+#estadoEspeciales {
+  white-space: nowrap;
+}
+
+@media (max-width: 760px) {
+  .especiales-header-linea {
+    flex-direction: column;
+  }
+
+  #estadoEspeciales {
+    width: fit-content;
+  }
+}

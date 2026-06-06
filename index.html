@@ -213,6 +213,42 @@
 
 <section id="tab-eliminacion" class="tab-content">
   <div class="card">
+
+    <div class="especiales-eliminacion">
+      <div class="especiales-header-linea">
+        <div>
+          <h3>Pronósticos especiales</h3>
+          <p>
+            Estos datos también forman parte del reglamento y se guardan junto con todos tus pronósticos.
+          </p>
+        </div>
+    
+        <span id="estadoEspeciales" class="estado-pendiente">
+          Sin guardar
+        </span>
+      </div>
+    
+      <div class="especiales-eliminacion-grid">
+        <div class="especial-campo">
+          <label for="especialGoleador">Goleador del torneo</label>
+          <input 
+            type="text" 
+            id="especialGoleador" 
+            placeholder="Ejemplo: Kylian Mbappé"
+          >
+        </div>
+    
+        <div class="especial-campo">
+          <label for="especialMejorJugador">Mejor jugador del torneo</label>
+          <input 
+            type="text" 
+            id="especialMejorJugador" 
+            placeholder="Ejemplo: Lionel Messi"
+          >
+        </div>
+      </div>
+    </div>
+
     <h2>Eliminación directa <span class="hint-scroll">← desliza →</span></h2>
 
     <button id="btnRecalcularBracket" class="btn-recalcular-bracket">
@@ -225,32 +261,7 @@
       </div>
     </div>
 
-    <div class="especiales-eliminacion">
-      <h3>Pronósticos especiales</h3>
-      <p>
-        Estos datos también forman parte del reglamento y se guardan junto con todos tus pronósticos.
-      </p>
 
-      <div class="especiales-eliminacion-grid">
-        <div class="especial-campo">
-          <label for="especialGoleador">Goleador del torneo</label>
-          <input 
-            type="text" 
-            id="especialGoleador" 
-            placeholder="Ejemplo: Kylian Mbappé"
-          >
-        </div>
-
-        <div class="especial-campo">
-          <label for="especialMejorJugador">Mejor jugador del torneo</label>
-          <input 
-            type="text" 
-            id="especialMejorJugador" 
-            placeholder="Ejemplo: Lionel Messi"
-          >
-        </div>
-      </div>
-    </div>
   </div>
 </section>
 
