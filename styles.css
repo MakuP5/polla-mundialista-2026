@@ -1062,3 +1062,248 @@ button {
     width: fit-content;
   }
 }
+
+.instrucciones-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.instrucciones-card::before {
+  content: "";
+  position: absolute;
+  top: -90px;
+  right: -90px;
+  width: 190px;
+  height: 190px;
+  background: rgba(71, 181, 255, 0.12);
+  border-radius: 50%;
+}
+
+.instrucciones-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 22px;
+  position: relative;
+  z-index: 1;
+}
+
+.instrucciones-icon {
+  width: 58px;
+  height: 58px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #47b5ff;
+  color: #07111f;
+  border-radius: 18px;
+  font-size: 2rem;
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.35);
+}
+
+.instrucciones-header h2 {
+  margin: 0;
+}
+
+.instrucciones-header p {
+  margin: 4px 0 0;
+  color: #dbeafe;
+}
+
+.instrucciones-alerta {
+  background: rgba(255, 209, 102, 0.14);
+  border: 1px solid rgba(255, 209, 102, 0.55);
+  color: #fff7d6;
+  padding: 14px;
+  border-radius: 14px;
+  margin: 18px 0;
+  position: relative;
+  z-index: 1;
+}
+
+.instrucciones-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin: 22px 0;
+  position: relative;
+  z-index: 1;
+}
+
+.instruccion-item {
+  background: #0b1626;
+  border: 1px solid #24496e;
+  border-radius: 16px;
+  padding: 18px;
+}
+
+.instruccion-numero {
+  width: 34px;
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #ffd166;
+  color: #111;
+  font-weight: 900;
+  border-radius: 50%;
+  margin-bottom: 10px;
+}
+
+.instruccion-item h3 {
+  margin: 0 0 8px;
+  color: #9fd3ff;
+}
+
+.instruccion-item p {
+  color: #dbeafe;
+  line-height: 1.55;
+  margin-bottom: 0;
+}
+
+.instruccion-item strong,
+.instrucciones-bloque strong {
+  color: #ffd166;
+}
+
+.instrucciones-pasos,
+.instrucciones-bloque {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  padding: 18px;
+  margin-top: 18px;
+  position: relative;
+  z-index: 1;
+}
+
+.instrucciones-pasos h3,
+.instrucciones-bloque h3 {
+  margin-top: 0;
+  color: #ffd166;
+}
+
+.flujo-app {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.flujo-app span {
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 8px 10px;
+  border-radius: 999px;
+  color: #dbeafe;
+  font-size: 0.9rem;
+  font-weight: bold;
+}
+
+.instrucciones-bloque p,
+.instrucciones-bloque li {
+  color: #dbeafe;
+  line-height: 1.55;
+}
+
+.instrucciones-bloque ul {
+  margin-bottom: 0;
+  padding-left: 22px;
+}
+
+@media (max-width: 760px) {
+  .instrucciones-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .instrucciones-header {
+    align-items: flex-start;
+  }
+
+  .flujo-app {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .flujo-app span {
+    border-radius: 12px;
+    text-align: center;
+  }
+}
+
+.hero-section {
+  width: min(1200px, 94%);
+  margin: 24px auto 10px;
+}
+
+.hero-banner {
+  position: relative;
+  border-radius: 24px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 209, 102, 0.28);
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.35);
+  background: #07111f;
+}
+
+.hero-image {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+@media (max-width: 760px) {
+  .hero-section {
+    width: 100%;
+    margin: 0 0 16px;
+  }
+
+  .hero-banner {
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+  }
+}
+
+.reglamento-imagen-bloque {
+  margin-top: 28px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 209, 102, 0.35);
+  border-radius: 18px;
+  padding: 20px;
+  position: relative;
+  z-index: 1;
+}
+
+.reglamento-imagen-bloque h3 {
+  color: #ffd166;
+  margin-top: 0;
+}
+
+.reglamento-imagen-bloque p {
+  color: #dbeafe;
+}
+
+.reglamento-imagen-wrapper {
+  margin-top: 18px;
+  border-radius: 18px;
+  overflow: hidden;
+  background: #07111f;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.35);
+}
+
+.reglamento-imagen {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+@media (max-width: 760px) {
+  .reglamento-imagen-bloque {
+    padding: 14px;
+  }
+
+  .reglamento-imagen-wrapper {
+    border-radius: 12px;
+  }
+}

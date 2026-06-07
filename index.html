@@ -11,7 +11,17 @@
 <body>
 
   <header class="hero">
-    <h1>⚽ Polla Mundialista 2026</h1>
+
+    <section class="hero-section">
+      <div class="hero-banner">
+        <img 
+          src="assets/img/polla.png" 
+          alt="Banner principal de la Polla Mundialista ADTUPS"
+          class="hero-image"
+        >
+      </div>
+    </section>
+
     <p>Registra tus predicciones, compite con tus amigos y sube en el ranking.</p>
     <div class="auth-panel">
   <div id="authLoggedOut">
@@ -68,10 +78,13 @@
 </div>
   </header>
 
+
+
   <main class="container">
 
     <nav class="tabs-menu">
       <button class="tab-btn" data-tab="tab-reglamento">Reglamento</button>
+      <button class="tab-btn" data-tab="tab-instrucciones">Instrucciones</button>
       <button class="tab-btn active" data-tab="tab-grupos">Fase de grupos</button>
       <button class="tab-btn" data-tab="tab-eliminacion">Eliminación directa</button>
       <button class="tab-btn" data-tab="tab-ranking">Ranking</button>
@@ -95,6 +108,22 @@
         <p>Polla Mundialista 2026</p>
       </div>
     </div>
+
+    <div class="reglamento-imagen-bloque">
+      <h3>Reglamento visual</h3>
+      <p>
+        Consulta también el resumen visual del reglamento, puntajes, desempates y premios.
+      </p>
+    
+      <div class="reglamento-imagen-wrapper">
+        <img 
+          src="assets/img/adetups.png" 
+          alt="Reglamento oficial visual de la Polla Mundialista 2026"
+          class="reglamento-imagen"
+        >
+      </div>
+    </div>
+
 
     <div class="reglamento-bloque objetivo">
       <h3>Objetivo</h3>
@@ -198,6 +227,123 @@
         <span>=</span>
         <strong>4 puntos</strong>
       </div>
+    </div>
+
+  </div>
+</section>
+
+<section id="tab-instrucciones" class="tab-content">
+  <div class="card instrucciones-card">
+    <div class="instrucciones-header">
+      <span class="instrucciones-icon">🧭</span>
+      <div>
+        <h2>Instrucciones de uso</h2>
+        <p>Guía rápida para registrar correctamente tu polla mundialista.</p>
+      </div>
+    </div>
+
+    <div class="instrucciones-alerta">
+      <strong>Importante:</strong>
+      todos tus pronósticos se guardan con el botón
+      <strong>“Guardar todos mis pronósticos”</strong>. No se guardan partido por partido.
+    </div>
+
+    <div class="instrucciones-grid">
+      <article class="instruccion-item">
+        <span class="instruccion-numero">1</span>
+        <h3>Inicia sesión o regístrate</h3>
+        <p>
+          Ingresa con tu cuenta habilitada o regístrate con correo y contraseña.
+          Si usas registro por correo, revisa tu bandeja de entrada y confirma tu cuenta.
+        </p>
+      </article>
+
+      <article class="instruccion-item">
+        <span class="instruccion-numero">2</span>
+        <h3>Llena la fase de grupos</h3>
+        <p>
+          En la pestaña <strong>Fase de grupos</strong>, escribe el marcador que pronosticas
+          para cada partido. Con esos resultados, la aplicación calculará automáticamente
+          las posiciones de cada grupo.
+        </p>
+      </article>
+
+      <article class="instruccion-item">
+        <span class="instruccion-numero">3</span>
+        <h3>Recalcula las llaves</h3>
+        <p>
+          Luego de llenar tus marcadores de grupos, entra a
+          <strong>Eliminación directa</strong> y presiona
+          <strong>“Recalcular llaves con mis pronósticos”</strong>.
+          Así se cargan los cruces de dieciseisavos según tus propios resultados.
+        </p>
+      </article>
+
+      <article class="instruccion-item">
+        <span class="instruccion-numero">4</span>
+        <h3>Completa la eliminación directa</h3>
+        <p>
+          Ingresa los marcadores de dieciseisavos, octavos, cuartos, semifinales
+          y final. Si un partido termina empatado, debes seleccionar el
+          <strong>equipo que avanza</strong>.
+        </p>
+      </article>
+
+      <article class="instruccion-item">
+        <span class="instruccion-numero">5</span>
+        <h3>Agrega los pronósticos especiales</h3>
+        <p>
+          En la parte superior de <strong>Eliminación directa</strong>, escribe tu pronóstico
+          para <strong>goleador del torneo</strong> y <strong>mejor jugador del torneo</strong>.
+        </p>
+      </article>
+
+      <article class="instruccion-item">
+        <span class="instruccion-numero">6</span>
+        <h3>Guarda todos tus pronósticos</h3>
+        <p>
+          Cuando termines, presiona <strong>“Guardar todos mis pronósticos”</strong>.
+          La aplicación guardará tus marcadores, equipos que avanzan, goleador y mejor jugador.
+        </p>
+      </article>
+    </div>
+
+    <div class="instrucciones-pasos">
+      <h3>Flujo recomendado</h3>
+
+      <div class="flujo-app">
+        <span>1. Registrarse</span>
+        <span>→</span>
+        <span>2. Llenar grupos</span>
+        <span>→</span>
+        <span>3. Recalcular llaves</span>
+        <span>→</span>
+        <span>4. Llenar eliminatorias</span>
+        <span>→</span>
+        <span>5. Agregar especiales</span>
+        <span>→</span>
+        <span>6. Guardar todo</span>
+      </div>
+    </div>
+
+    <div class="instrucciones-bloque">
+      <h3>¿Cómo sé que mis datos se guardaron?</h3>
+      <p>
+        Cuando tus datos se guarden correctamente, verás un mensaje de confirmación.
+        Además, al volver a entrar con tu cuenta, tus marcadores, equipos que avanzan,
+        goleador y mejor jugador se cargarán automáticamente en sus respectivos campos.
+      </p>
+    </div>
+
+    <div class="instrucciones-bloque">
+      <h3>Recomendaciones importantes</h3>
+      <ul>
+        <li>Completa primero la fase de grupos antes de llenar la eliminación directa.</li>
+        <li>Recalcula las llaves cada vez que cambies marcadores importantes de grupos.</li>
+        <li>Si hay empate en una fase eliminatoria, selecciona obligatoriamente quién avanza.</li>
+        <li>No olvides guardar todo al final.</li>
+        <li>Revisa el reglamento para conocer el sistema de puntuación.</li>
+      </ul>
     </div>
   </div>
 </section>
