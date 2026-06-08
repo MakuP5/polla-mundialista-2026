@@ -153,121 +153,28 @@ btnRecuperarPassword.addEventListener("click", async () => {
   }
 });
 
-btnRecalcularBracket.addEventListener("click", async () => {
-  if (!usuarioActual) {
-    alert("Primero debes iniciar sesión para guardar y recalcular tus llaves.");
+btnRecalcularBracket.addEventListener("click", () => {
+  const pronosticosGrupos = recolectarPronosticosFaseGrupos();
+
+  if (!pronosticosGrupos) {
     return;
   }
 
-  await usuarioActual.reload();
-  usuarioActual = auth.currentUser;
-
-  if (!usuarioActual.emailVerified) {
-    alert("Debes verificar tu correo antes de guardar y recalcular tus llaves.");
-    actualizarPanelUsuario(usuarioActual);
-    return;
-  }
-
-  /*
-    1. Primero recolectamos TODOS los pronósticos visibles:
-       - fase de grupos
-       - eliminación directa
-       - equipos que avanzan
-       
-    Esto evita que el usuario pierda lo que ya escribió en las llaves.
-  */
-  const pronosticosActuales = recolectarPronosticosPartidos();
-
-  if (!pronosticosActuales) {
-    return;
-  }
-
-  /*
-    2. Verificamos que exista al menos un pronóstico de fase de grupos,
-       porque las llaves se calculan a partir de esos resultados.
-  */
-  const tienePronosticosDeGrupos = Object.values(pronosticosActuales).some(
-    (pronostico) => esFaseDeGrupos(pronostico)
+  const partidosCalculados = calcularPartidosConPronosticos(
+    partidosGlobales,
+    {
+      ...prediccionesUsuario,
+      ...pronosticosGrupos
+    }
   );
 
-  if (!tienePronosticosDeGrupos) {
-    alert("Primero ingresa marcadores en la fase de grupos.");
-    return;
-  }
+  const partidosEliminacion = partidosCalculados.filter(
+    (partido) => !esFaseDeGrupos(partido)
+  );
 
-  /*
-    3. También guardamos los pronósticos especiales que estén escritos
-       en ese momento.
-  */
-  const especialesActuales = recolectarPronosticosEspeciales();
+  renderizarBracketEliminacion(partidosEliminacion);
 
-  if (!validarPronosticosEspeciales(especialesActuales)) {
-    return;
-  }
-
-  try {
-    const docRef = doc(db, "prediccionesUsuarios", usuarioActual.uid);
-
-    /*
-      4. Mezclamos lo que ya estaba guardado con lo que el usuario
-         tiene actualmente escrito en pantalla.
-         
-      Lo actual tiene prioridad sobre lo anterior.
-    */
-    const partidosActualizados = {
-      ...prediccionesUsuario,
-      ...pronosticosActuales
-    };
-
-    await setDoc(docRef, {
-      userId: usuarioActual.uid,
-      userName: usuarioActual.displayName || usuarioActual.email,
-      userEmail: usuarioActual.email,
-      emailVerificado: usuarioActual.emailVerified,
-
-      partidos: partidosActualizados,
-      especiales: especialesActuales,
-
-      puntosTotales: 0,
-      aciertosExactos: 0,
-      aciertosResultado: 0,
-      aciertosClasificados: 0,
-      acertoCampeon: false,
-      acertoSubcampeon: false,
-      acertoGoleador: false,
-
-      fechaActualizacion: serverTimestamp()
-    }, { merge: true });
-
-    prediccionesUsuario = partidosActualizados;
-    especialesUsuario = especialesActuales;
-
-    /*
-      5. Recalculamos las llaves usando los datos actualizados.
-    */
-    const partidosCalculados = calcularPartidosConPronosticos(
-      partidosGlobales,
-      prediccionesUsuario
-    );
-
-    const partidosEliminacion = partidosCalculados.filter(
-      (partido) => !esFaseDeGrupos(partido)
-    );
-
-    renderizarBracketEliminacion(partidosEliminacion);
-    renderizarPronosticosEspeciales();
-
-    estadoGuardadoGlobal.textContent =
-      "Tus pronósticos actuales fueron guardados y las llaves se recalcularon correctamente.";
-
-    alert(
-      "Listo. Se guardaron tus datos actuales, incluyendo las llaves, y luego se recalculó la eliminación directa."
-    );
-
-  } catch (error) {
-    console.error("Error guardando y recalculando llaves:", error);
-    alert("No se pudieron guardar los datos ni recalcular las llaves.");
-  }
+  alert("Las llaves se recalcularon con los pronósticos de fase de grupos.");
 });
 
 btnRegistroEmail.addEventListener("click", async () => {
