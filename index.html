@@ -23,47 +23,175 @@
     </section>
 
     <p>Registra tus predicciones, compite con tus amigos y sube en el ranking.</p>
+
     <div class="auth-panel">
-  <div id="authLoggedOut">
-    <div class="auth-actions">
-      <button id="btnLogin">Ingresar con Google</button>
-    </div>
 
-    <div class="auth-email-card">
-      <h3>Ingresar con correo</h3>
-
-      <input 
-        type="text" 
-        id="nombreRegistro" 
-        placeholder="Nombre para mostrar"
-      >
-
-      <input 
-        type="email" 
-        id="emailAuth" 
-        placeholder="Correo electrónico"
-      >
-
-      <input 
-        type="password" 
-        id="passwordAuth" 
-        placeholder="Contraseña mínimo 6 caracteres"
-      >
-
-      <div class="auth-actions">
-        <button id="btnRegistroEmail">Registrarme</button>
-        <button id="btnLoginEmail">Ingresar</button>
-        <button id="btnRecuperarPassword" type="button">
-          Olvidé mi contraseña
-        </button>
+      <div id="authLoggedOut" class="auth-access-card">
+    
+        <div class="auth-switch">
+          <button 
+            id="tabLoginAuth" 
+            class="auth-switch-btn active" 
+            type="button"
+          >
+            Iniciar sesión
+          </button>
+    
+          <button 
+            id="tabRegistroAuth" 
+            class="auth-switch-btn" 
+            type="button"
+          >
+            Registrarse
+          </button>
+        </div>
+    
+        <!-- PANEL DE INICIO DE SESIÓN -->
+        <section id="panelLoginAuth" class="auth-form-panel active">
+    
+          <h3>Bienvenido nuevamente</h3>
+    
+          <p class="auth-intro">
+            Ingresa con tu correo institucional UPS para revisar o completar tus pronósticos.
+          </p>
+    
+          <label for="emailLogin">
+            Correo institucional
+          </label>
+    
+          <input
+            type="email"
+            id="emailLogin"
+            placeholder="usuario@ups.edu.ec"
+            autocomplete="email"
+          >
+    
+          <label for="passwordLogin">
+            Contraseña
+          </label>
+    
+          <input
+            type="password"
+            id="passwordLogin"
+            placeholder="Tu contraseña"
+            autocomplete="current-password"
+          >
+    
+          <button
+            id="btnLoginEmail"
+            class="auth-primary-btn"
+            type="button"
+          >
+            Iniciar sesión
+          </button>
+    
+          <button
+            id="btnRecuperarPassword"
+            class="auth-link-btn"
+            type="button"
+          >
+            ¿Olvidaste tu contraseña?
+          </button>
+    
+          <p class="auth-change-text">
+            ¿Todavía no tienes una cuenta?
+    
+            <button
+              id="irRegistroAuth"
+              class="auth-inline-btn"
+              type="button"
+            >
+              Regístrate
+            </button>
+          </p>
+    
+        </section>
+    
+        <!-- PANEL DE REGISTRO -->
+        <section
+          id="panelRegistroAuth"
+          class="auth-form-panel"
+          hidden
+        >
+    
+          <h3>Crear una cuenta</h3>
+    
+          <p class="auth-intro">
+            Regístrate con tu correo institucional para participar en la polla.
+          </p>
+    
+          <label for="nombreRegistro">
+            Nombres y apellidos
+          </label>
+    
+          <input
+            type="text"
+            id="nombreRegistro"
+            placeholder="Nombre para mostrar"
+            autocomplete="name"
+          >
+    
+          <label for="emailRegistro">
+            Correo institucional
+          </label>
+    
+          <input
+            type="email"
+            id="emailRegistro"
+            placeholder="usuario@ups.edu.ec"
+            autocomplete="email"
+          >
+    
+          <label for="passwordRegistro">
+            Contraseña
+          </label>
+    
+          <input
+            type="password"
+            id="passwordRegistro"
+            placeholder="Mínimo 6 caracteres"
+            autocomplete="new-password"
+          >
+    
+          <label for="confirmarPasswordRegistro">
+            Confirmar contraseña
+          </label>
+    
+          <input
+            type="password"
+            id="confirmarPasswordRegistro"
+            placeholder="Repite tu contraseña"
+            autocomplete="new-password"
+          >
+    
+          <button
+            id="btnRegistroEmail"
+            class="auth-primary-btn"
+            type="button"
+          >
+            Crear cuenta
+          </button>
+    
+          <p class="auth-help">
+            Después de registrarte, revisa tu correo y confirma tu cuenta antes de guardar predicciones.
+          </p>
+    
+          <p class="auth-change-text">
+            ¿Ya tienes una cuenta?
+    
+            <button
+              id="irLoginAuth"
+              class="auth-inline-btn"
+              type="button"
+            >
+              Inicia sesión
+            </button>
+          </p>
+    
+        </section>
+    
       </div>
-
-      <p class="auth-help">
-        Después de registrarte, revisa tu correo y confirma tu cuenta antes de guardar predicciones.
-      </p>
-    </div>
-  </div>
-
+      
   <div id="authLoggedIn" class="hidden">
     <p id="userInfo">No has iniciado sesión.</p>
 

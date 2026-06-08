@@ -1,7 +1,6 @@
-import { auth, provider, db } from "./firebase-config.js";
+import { auth, db } from "./firebase-config.js";
 
 import {
-  signInWithPopup,
   signOut,
   onAuthStateChanged,
   createUserWithEmailAndPassword,
@@ -28,7 +27,6 @@ const gruposContainer = document.getElementById("gruposContainer");
 const bracketContainer = document.getElementById("bracketContainer");
 const rankingContainer = document.getElementById("rankingContainer");
 
-const btnLogin = document.getElementById("btnLogin");
 const btnLogout = document.getElementById("btnLogout");
 const userInfo = document.getElementById("userInfo");
 
@@ -39,8 +37,24 @@ const authLoggedOut = document.getElementById("authLoggedOut");
 const authLoggedIn = document.getElementById("authLoggedIn");
 
 const nombreRegistro = document.getElementById("nombreRegistro");
-const emailAuth = document.getElementById("emailAuth");
-const passwordAuth = document.getElementById("passwordAuth");
+
+const emailLogin = document.getElementById("emailLogin");
+const passwordLogin = document.getElementById("passwordLogin");
+
+const emailRegistro = document.getElementById("emailRegistro");
+const passwordRegistro = document.getElementById("passwordRegistro");
+const confirmarPasswordRegistro = document.getElementById(
+  "confirmarPasswordRegistro"
+);
+
+const tabLoginAuth = document.getElementById("tabLoginAuth");
+const tabRegistroAuth = document.getElementById("tabRegistroAuth");
+
+const panelLoginAuth = document.getElementById("panelLoginAuth");
+const panelRegistroAuth = document.getElementById("panelRegistroAuth");
+
+const irRegistroAuth = document.getElementById("irRegistroAuth");
+const irLoginAuth = document.getElementById("irLoginAuth");
 
 const btnReenviarVerificacion = document.getElementById("btnReenviarVerificacion");
 const btnVerificarEstado = document.getElementById("btnVerificarEstado");
@@ -86,17 +100,36 @@ let partidosGlobales = [];
 let prediccionesUsuario = {};
 let especialesUsuario = {};
 
-btnLogin.addEventListener("click", async () => {
-  try {
-    await signInWithPopup(auth, provider);
-  } catch (error) {
-    console.error("Error al iniciar sesión:", error);
-    alert("No se pudo iniciar sesión con Google.");
-  }
-});
+function mostrarPanelLogin() {
+  tabLoginAuth.classList.add("active");
+  tabRegistroAuth.classList.remove("active");
+
+  panelLoginAuth.classList.add("active");
+  panelRegistroAuth.classList.remove("active");
+
+  panelLoginAuth.hidden = false;
+  panelRegistroAuth.hidden = true;
+}
+
+function mostrarPanelRegistro() {
+  tabRegistroAuth.classList.add("active");
+  tabLoginAuth.classList.remove("active");
+
+  panelRegistroAuth.classList.add("active");
+  panelLoginAuth.classList.remove("active");
+
+  panelRegistroAuth.hidden = false;
+  panelLoginAuth.hidden = true;
+}
+
+tabLoginAuth.addEventListener("click", mostrarPanelLogin);
+tabRegistroAuth.addEventListener("click", mostrarPanelRegistro);
+
+irRegistroAuth.addEventListener("click", mostrarPanelRegistro);
+irLoginAuth.addEventListener("click", mostrarPanelLogin);
 
 btnRecuperarPassword.addEventListener("click", async () => {
-  const email = emailAuth.value.trim().toLowerCase();
+  const email = emailLogin.value.trim().toLowerCase();
 
   if (!email) {
     alert("Ingresa tu correo electrónico para enviarte el enlace de recuperación.");
@@ -146,16 +179,17 @@ btnRecalcularBracket.addEventListener("click", () => {
 
 btnRegistroEmail.addEventListener("click", async () => {
   const nombre = nombreRegistro.value.trim();
-  const email = emailAuth.value.trim().toLowerCase();
-  const password = passwordAuth.value;
+  const email = emailRegistro.value.trim().toLowerCase();
+  const password = passwordRegistro.value;
+  const confirmarPassword = confirmarPasswordRegistro.value;
+
+  if (!nombre || !email || !password || !confirmarPassword) {
+    alert("Completa nombre, correo, contraseña y confirmación.");
+    return;
+  }
 
   if (!esCorreoInstitucional(email)) {
-  alert("Debes registrarte con tu correo institucional UPS.");
-  return;
-}
-
-  if (!nombre || !email || !password) {
-    alert("Completa nombre, correo y contraseña.");
+    alert("Debes registrarte con tu correo institucional UPS.");
     return;
   }
 
@@ -164,8 +198,17 @@ btnRegistroEmail.addEventListener("click", async () => {
     return;
   }
 
+  if (password !== confirmarPassword) {
+    alert("Las contraseñas no coinciden.");
+    return;
+  }
+
   try {
-    const credencial = await createUserWithEmailAndPassword(auth, email, password);
+    const credencial = await createUserWithEmailAndPassword(
+      auth,
+      email,
+      password
+    );
 
     await updateProfile(credencial.user, {
       displayName: nombre
@@ -178,17 +221,34 @@ btnRegistroEmail.addEventListener("click", async () => {
       displayName: nombre
     });
 
-    alert("Registro creado. Te enviamos un correo de verificación. Revisa tu bandeja de entrada o spam.");
+    alert(
+      "Registro creado. Te enviamos un correo de verificación. Revisa tu bandeja de entrada o spam."
+    );
+
+    emailLogin.value = email;
+    passwordLogin.value = "";
+
+    nombreRegistro.value = "";
+    emailRegistro.value = "";
+    passwordRegistro.value = "";
+    confirmarPasswordRegistro.value = "";
+
+    mostrarPanelLogin();
 
   } catch (error) {
     console.error("Error registrando usuario:", error);
 
     if (error.code === "auth/email-already-in-use") {
-      alert("Ese correo ya está registrado. Intenta ingresar.");
+      alert("Ese correo ya está registrado. Intenta iniciar sesión.");
+      emailLogin.value = email;
+      mostrarPanelLogin();
+
     } else if (error.code === "auth/invalid-email") {
       alert("El correo no es válido.");
+
     } else if (error.code === "auth/weak-password") {
       alert("La contraseña es muy débil.");
+
     } else {
       alert("No se pudo crear el registro.");
     }
@@ -196,8 +256,8 @@ btnRegistroEmail.addEventListener("click", async () => {
 });
 
 btnLoginEmail.addEventListener("click", async () => {
-  const email = emailAuth.value.trim().toLowerCase();
-  const password = passwordAuth.value;
+  const email = emailLogin.value.trim().toLowerCase();
+  const password = passwordLogin.value;
 
   if (!email || !password) {
     alert("Ingresa correo y contraseña.");
@@ -205,22 +265,48 @@ btnLoginEmail.addEventListener("click", async () => {
   }
 
   if (!esCorreoInstitucional(email)) {
-  alert("Debes ingresar con tu correo institucional UPS.");
-  return;
-}
+    alert("Debes ingresar con tu correo institucional UPS.");
+    return;
+  }
 
   try {
     await signInWithEmailAndPassword(auth, email, password);
+
+    passwordLogin.value = "";
+
   } catch (error) {
     console.error("Error ingresando con correo:", error);
 
-    if (error.code === "auth/invalid-credential") {
+    if (
+      error.code === "auth/invalid-credential" ||
+      error.code === "auth/wrong-password" ||
+      error.code === "auth/user-not-found"
+    ) {
       alert("Correo o contraseña incorrectos.");
+
     } else if (error.code === "auth/invalid-email") {
       alert("El correo no es válido.");
+
+    } else if (error.code === "auth/too-many-requests") {
+      alert(
+        "Se realizaron demasiados intentos. Espera unos minutos e inténtalo nuevamente."
+      );
+
     } else {
       alert("No se pudo iniciar sesión.");
     }
+  }
+});
+
+passwordLogin.addEventListener("keydown", (event) => {
+  if (event.key === "Enter") {
+    btnLoginEmail.click();
+  }
+});
+
+confirmarPasswordRegistro.addEventListener("keydown", (event) => {
+  if (event.key === "Enter") {
+    btnRegistroEmail.click();
   }
 });
 
