@@ -168,23 +168,55 @@ btnRecalcularBracket.addEventListener("click", async () => {
     return;
   }
 
-  const pronosticosGrupos = recolectarPronosticosFaseGrupos();
+  /*
+    1. Primero recolectamos TODOS los pronósticos visibles:
+       - fase de grupos
+       - eliminación directa
+       - equipos que avanzan
+       
+    Esto evita que el usuario pierda lo que ya escribió en las llaves.
+  */
+  const pronosticosActuales = recolectarPronosticosPartidos();
 
-  if (!pronosticosGrupos) {
+  if (!pronosticosActuales) {
     return;
   }
 
-  if (Object.keys(pronosticosGrupos).length === 0) {
-    alert("Primero ingresa al menos un marcador en la fase de grupos.");
+  /*
+    2. Verificamos que exista al menos un pronóstico de fase de grupos,
+       porque las llaves se calculan a partir de esos resultados.
+  */
+  const tienePronosticosDeGrupos = Object.values(pronosticosActuales).some(
+    (pronostico) => esFaseDeGrupos(pronostico)
+  );
+
+  if (!tienePronosticosDeGrupos) {
+    alert("Primero ingresa marcadores en la fase de grupos.");
+    return;
+  }
+
+  /*
+    3. También guardamos los pronósticos especiales que estén escritos
+       en ese momento.
+  */
+  const especialesActuales = recolectarPronosticosEspeciales();
+
+  if (!validarPronosticosEspeciales(especialesActuales)) {
     return;
   }
 
   try {
     const docRef = doc(db, "prediccionesUsuarios", usuarioActual.uid);
 
+    /*
+      4. Mezclamos lo que ya estaba guardado con lo que el usuario
+         tiene actualmente escrito en pantalla.
+         
+      Lo actual tiene prioridad sobre lo anterior.
+    */
     const partidosActualizados = {
       ...prediccionesUsuario,
-      ...pronosticosGrupos
+      ...pronosticosActuales
     };
 
     await setDoc(docRef, {
@@ -192,8 +224,10 @@ btnRecalcularBracket.addEventListener("click", async () => {
       userName: usuarioActual.displayName || usuarioActual.email,
       userEmail: usuarioActual.email,
       emailVerificado: usuarioActual.emailVerified,
+
       partidos: partidosActualizados,
-      especiales: especialesUsuario || {},
+      especiales: especialesActuales,
+
       puntosTotales: 0,
       aciertosExactos: 0,
       aciertosResultado: 0,
@@ -201,11 +235,16 @@ btnRecalcularBracket.addEventListener("click", async () => {
       acertoCampeon: false,
       acertoSubcampeon: false,
       acertoGoleador: false,
+
       fechaActualizacion: serverTimestamp()
     }, { merge: true });
 
     prediccionesUsuario = partidosActualizados;
+    especialesUsuario = especialesActuales;
 
+    /*
+      5. Recalculamos las llaves usando los datos actualizados.
+    */
     const partidosCalculados = calcularPartidosConPronosticos(
       partidosGlobales,
       prediccionesUsuario
@@ -216,15 +255,18 @@ btnRecalcularBracket.addEventListener("click", async () => {
     );
 
     renderizarBracketEliminacion(partidosEliminacion);
+    renderizarPronosticosEspeciales();
 
     estadoGuardadoGlobal.textContent =
-      "Marcadores de fase de grupos guardados. Las llaves fueron recalculadas correctamente.";
+      "Tus pronósticos actuales fueron guardados y las llaves se recalcularon correctamente.";
 
-    alert("Listo. Tus marcadores de grupos fueron guardados y las llaves se recalcularon.");
+    alert(
+      "Listo. Se guardaron tus datos actuales, incluyendo las llaves, y luego se recalculó la eliminación directa."
+    );
 
   } catch (error) {
-    console.error("Error guardando grupos y recalculando llaves:", error);
-    alert("No se pudieron guardar los grupos ni recalcular las llaves.");
+    console.error("Error guardando y recalculando llaves:", error);
+    alert("No se pudieron guardar los datos ni recalcular las llaves.");
   }
 });
 
