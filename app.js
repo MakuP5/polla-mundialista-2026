@@ -153,28 +153,79 @@ btnRecuperarPassword.addEventListener("click", async () => {
   }
 });
 
-btnRecalcularBracket.addEventListener("click", () => {
+btnRecalcularBracket.addEventListener("click", async () => {
+  if (!usuarioActual) {
+    alert("Primero debes iniciar sesión para guardar y recalcular tus llaves.");
+    return;
+  }
+
+  await usuarioActual.reload();
+  usuarioActual = auth.currentUser;
+
+  if (!usuarioActual.emailVerified) {
+    alert("Debes verificar tu correo antes de guardar y recalcular tus llaves.");
+    actualizarPanelUsuario(usuarioActual);
+    return;
+  }
+
   const pronosticosGrupos = recolectarPronosticosFaseGrupos();
 
   if (!pronosticosGrupos) {
     return;
   }
 
-  const partidosCalculados = calcularPartidosConPronosticos(
-    partidosGlobales,
-    {
+  if (Object.keys(pronosticosGrupos).length === 0) {
+    alert("Primero ingresa al menos un marcador en la fase de grupos.");
+    return;
+  }
+
+  try {
+    const docRef = doc(db, "prediccionesUsuarios", usuarioActual.uid);
+
+    const partidosActualizados = {
       ...prediccionesUsuario,
       ...pronosticosGrupos
-    }
-  );
+    };
 
-  const partidosEliminacion = partidosCalculados.filter(
-    (partido) => !esFaseDeGrupos(partido)
-  );
+    await setDoc(docRef, {
+      userId: usuarioActual.uid,
+      userName: usuarioActual.displayName || usuarioActual.email,
+      userEmail: usuarioActual.email,
+      emailVerificado: usuarioActual.emailVerified,
+      partidos: partidosActualizados,
+      especiales: especialesUsuario || {},
+      puntosTotales: 0,
+      aciertosExactos: 0,
+      aciertosResultado: 0,
+      aciertosClasificados: 0,
+      acertoCampeon: false,
+      acertoSubcampeon: false,
+      acertoGoleador: false,
+      fechaActualizacion: serverTimestamp()
+    }, { merge: true });
 
-  renderizarBracketEliminacion(partidosEliminacion);
+    prediccionesUsuario = partidosActualizados;
 
-  alert("Las llaves se recalcularon con los pronósticos de fase de grupos.");
+    const partidosCalculados = calcularPartidosConPronosticos(
+      partidosGlobales,
+      prediccionesUsuario
+    );
+
+    const partidosEliminacion = partidosCalculados.filter(
+      (partido) => !esFaseDeGrupos(partido)
+    );
+
+    renderizarBracketEliminacion(partidosEliminacion);
+
+    estadoGuardadoGlobal.textContent =
+      "Marcadores de fase de grupos guardados. Las llaves fueron recalculadas correctamente.";
+
+    alert("Listo. Tus marcadores de grupos fueron guardados y las llaves se recalcularon.");
+
+  } catch (error) {
+    console.error("Error guardando grupos y recalculando llaves:", error);
+    alert("No se pudieron guardar los grupos ni recalcular las llaves.");
+  }
 });
 
 btnRegistroEmail.addEventListener("click", async () => {
