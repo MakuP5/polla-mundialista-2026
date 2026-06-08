@@ -1473,3 +1473,25 @@ button {
     font-size: 0.88rem;
   }
 }
+
+.recalcular-ayuda {
+  margin-bottom: 12px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: rgba(255, 209, 102, 0.12);
+  border: 1px solid rgba(255, 209, 102, 0.45);
+  color: #fff7d6;
+}
+
+.recalcular-ayuda p {
+  margin: 0;
+  line-height: 1.5;
+  font-size: 0.92rem;
+}
+
+.btn-recalcular-bracket {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
