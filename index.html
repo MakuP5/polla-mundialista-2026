@@ -215,6 +215,15 @@
       <button class="tab-btn" data-tab="tab-instrucciones">Instrucciones</button>
       <button class="tab-btn active" data-tab="tab-grupos">Fase de grupos</button>
       <button class="tab-btn" data-tab="tab-eliminacion">Eliminación directa</button>
+      <button
+        class="tab-btn tab-btn-disabled"
+        id="btnTabEliminacion"
+        type="button"
+        disabled
+        aria-disabled="true"
+        title="Se habilitará al finalizar la fase de grupos">
+        🔒 Eliminación directa
+      </button>
       <button class="tab-btn" data-tab="tab-ranking">Ranking</button>
     </nav>
 
@@ -491,9 +500,24 @@ Más adelante se habilitará una nueva etapa para registrar los pronósticos de 
   </div>
 </section>
 
-<section id="tab-eliminacion" class="tab-content">
+<section id="tab-eliminacion" class="tab-content tab-eliminacion-bloqueada">
   <div class="card">
 
+    <div class="eliminacion-bloqueada-mensaje">
+  <span class="eliminacion-bloqueada-icono">🔒</span>
+
+  <div>
+    <h2>Eliminación directa próximamente</h2>
+
+    <p>
+      Esta sección se habilitará cuando termine la fase de grupos.
+      Por ahora, completa y guarda únicamente tus pronósticos de grupos.
+    </p>
+  </div>
+</div>
+
+<div class="contenido-eliminacion-desactivado">
+    
     <div class="especiales-eliminacion">
       <div class="especiales-header-linea">
         <div>
@@ -528,7 +552,7 @@ Más adelante se habilitará una nueva etapa para registrar los pronósticos de 
         </div>
       </div>
     </div>
-
+</div>
     <h2>Eliminación directa <span class="hint-scroll">← desliza →</span></h2>
 
 <button id="btnRecalcularBracket" class="btn-recalcular-bracket">
