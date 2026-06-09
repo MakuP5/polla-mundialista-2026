@@ -153,28 +153,159 @@ btnRecuperarPassword.addEventListener("click", async () => {
   }
 });
 
-btnRecalcularBracket.addEventListener("click", () => {
-  const pronosticosGrupos = recolectarPronosticosFaseGrupos();
-
-  if (!pronosticosGrupos) {
+btnRecalcularBracket.addEventListener("click", async () => {
+  if (!usuarioActual) {
+    alert("Primero debes iniciar sesión.");
     return;
   }
 
-  const partidosCalculados = calcularPartidosConPronosticos(
-    partidosGlobales,
-    {
-      ...prediccionesUsuario,
-      ...pronosticosGrupos
+  await usuarioActual.reload();
+  usuarioActual = auth.currentUser;
+
+  if (!usuarioActual.emailVerified) {
+    alert(
+      "Debes verificar tu correo antes de guardar y recalcular tus pronósticos."
+    );
+
+    actualizarPanelUsuario(usuarioActual);
+    return;
+  }
+
+  /*
+    Recolectamos todo lo que actualmente está escrito:
+
+    - fase de grupos;
+    - eliminación directa;
+    - equipo que avanza;
+    - marcadores actuales.
+  */
+  const pronosticosActuales = recolectarPronosticosPartidos();
+
+  if (!pronosticosActuales) {
+    return;
+  }
+
+  /*
+    Verificamos que existan resultados de fase de grupos.
+  */
+  const pronosticosGrupos = {};
+
+  Object.entries(pronosticosActuales).forEach(
+    ([partidoId, pronostico]) => {
+      if (esFaseDeGrupos(pronostico)) {
+        pronosticosGrupos[partidoId] = pronostico;
+      }
     }
   );
 
-  const partidosEliminacion = partidosCalculados.filter(
-    (partido) => !esFaseDeGrupos(partido)
-  );
+  if (Object.keys(pronosticosGrupos).length === 0) {
+    alert(
+      "Primero debes completar los marcadores de la fase de grupos."
+    );
+    return;
+  }
 
-  renderizarBracketEliminacion(partidosEliminacion);
+  const especialesActuales = recolectarPronosticosEspeciales();
 
-  alert("Las llaves se recalcularon con los pronósticos de fase de grupos.");
+  if (!validarPronosticosEspeciales(especialesActuales)) {
+    return;
+  }
+
+  try {
+    /*
+      Mezclamos lo que estaba previamente guardado con lo que
+      actualmente está escrito en pantalla.
+
+      Los datos actuales tienen prioridad.
+    */
+    const partidosActualizados = {
+      ...prediccionesUsuario,
+      ...pronosticosActuales
+    };
+
+    /*
+      Actualizamos primero la variable local para que el cálculo
+      utilice los datos más recientes.
+    */
+    prediccionesUsuario = partidosActualizados;
+    especialesUsuario = especialesActuales;
+
+    /*
+      Recalculamos toda la estructura del Mundial.
+
+      La función calcularPartidosConPronosticos ya contiene
+      tercerosAsignados, por lo que un mejor tercero no puede
+      utilizarse en más de un partido.
+    */
+    const partidosCalculados = calcularPartidosConPronosticos(
+      partidosGlobales,
+      prediccionesUsuario
+    );
+
+    const partidosEliminacion = partidosCalculados.filter(
+      (partido) => !esFaseDeGrupos(partido)
+    );
+
+    /*
+      Guardamos en Firebase lo que el usuario tenía escrito
+      antes de volver a dibujar las llaves.
+    */
+    const docRef = doc(
+      db,
+      "prediccionesUsuarios",
+      usuarioActual.uid
+    );
+
+    await setDoc(
+      docRef,
+      {
+        userId: usuarioActual.uid,
+        userName:
+          usuarioActual.displayName || usuarioActual.email,
+        userEmail: usuarioActual.email,
+        emailVerificado: usuarioActual.emailVerified,
+
+        partidos: partidosActualizados,
+        especiales: especialesActuales,
+
+        puntosTotales: 0,
+        aciertosExactos: 0,
+        aciertosResultado: 0,
+        aciertosClasificados: 0,
+        acertoCampeon: false,
+        acertoSubcampeon: false,
+        acertoGoleador: false,
+
+        fechaActualizacion: serverTimestamp()
+      },
+      {
+        merge: true
+      }
+    );
+
+    /*
+      Finalmente volvemos a mostrar las llaves actualizadas.
+    */
+    renderizarBracketEliminacion(partidosEliminacion);
+    renderizarPronosticosEspeciales();
+
+    estadoGuardadoGlobal.textContent =
+      "Tus pronósticos fueron guardados y las llaves se recalcularon correctamente.";
+
+    alert(
+      "Listo. Se guardaron tus marcadores actuales y se recalcularon las llaves."
+    );
+
+  } catch (error) {
+    console.error(
+      "Error guardando y recalculando las llaves:",
+      error
+    );
+
+    alert(
+      "No se pudieron guardar los pronósticos ni recalcular las llaves."
+    );
+  }
 });
 
 btnRegistroEmail.addEventListener("click", async () => {
@@ -1260,55 +1391,104 @@ function obtenerMejoresTerceros(posiciones) {
     }
   });
 
-  return terceros.sort((a, b) => {
-    if (b.pts !== a.pts) return b.pts - a.pts;
-    if (b.dg !== a.dg) return b.dg - a.dg;
-    if (b.gf !== a.gf) return b.gf - a.gf;
-    return a.nombre.localeCompare(b.nombre);
-  });
+  return terceros
+    .sort((a, b) => {
+      if (b.pts !== a.pts) {
+        return b.pts - a.pts;
+      }
+
+      if (b.dg !== a.dg) {
+        return b.dg - a.dg;
+      }
+
+      if (b.gf !== a.gf) {
+        return b.gf - a.gf;
+      }
+
+      return a.nombre.localeCompare(b.nombre);
+    })
+    .slice(0, 8);
 }
 
-function resolverEquipoDesdePronostico(textoOriginal, posiciones, mejoresTerceros, ganadoresPartidos) {
-  if (!textoOriginal) return "Por definir";
+function resolverEquipoDesdePronostico(
+  textoOriginal,
+  posiciones,
+  mejoresTerceros,
+  ganadoresPartidos,
+  tercerosAsignados
+) {
+  if (!textoOriginal) {
+    return "Por definir";
+  }
 
-  // Ganador de grupo: Group A Winners
+  // Ganador de grupo
   const ganadorGrupo = textoOriginal.match(/Group ([A-L]) Winners/);
+
   if (ganadorGrupo) {
     const grupo = ganadorGrupo[1];
-    return posiciones[grupo]?.[0]?.nombre || traducirPlaceholder(textoOriginal);
+
+    return posiciones[grupo]?.[0]?.nombre ||
+      traducirPlaceholder(textoOriginal);
   }
 
-  // Segundo de grupo: Group A Runners Up
+  // Segundo de grupo
   const segundoGrupo = textoOriginal.match(/Group ([A-L]) Runners Up/);
+
   if (segundoGrupo) {
     const grupo = segundoGrupo[1];
-    return posiciones[grupo]?.[1]?.nombre || traducirPlaceholder(textoOriginal);
+
+    return posiciones[grupo]?.[1]?.nombre ||
+      traducirPlaceholder(textoOriginal);
   }
 
-  // Mejor tercero entre grupos: Group A/B/C/D/E 3rd Place
-  const terceroGrupo = textoOriginal.match(/Group ([A-L](?:\/[A-L])+) 3rd Place/);
+  // Mejor tercero entre determinados grupos
+  const terceroGrupo = textoOriginal.match(
+    /Group ([A-L](?:\/[A-L])+) 3rd Place/
+  );
+
   if (terceroGrupo) {
     const gruposPermitidos = terceroGrupo[1].split("/");
 
-    const candidato = mejoresTerceros.find((equipo) =>
-      gruposPermitidos.includes(equipo.grupo)
-    );
+    const candidato = mejoresTerceros.find((equipo) => {
+      const perteneceAGrupoPermitido =
+        gruposPermitidos.includes(equipo.grupo);
 
-    return candidato?.nombre || traducirPlaceholder(textoOriginal);
+      const yaFueAsignado =
+        tercerosAsignados.has(equipo.nombre);
+
+      return perteneceAGrupoPermitido && !yaFueAsignado;
+    });
+
+    if (candidato) {
+      tercerosAsignados.add(candidato.nombre);
+      return candidato.nombre;
+    }
+
+    return traducirPlaceholder(textoOriginal);
   }
 
-  // Ganador de partido: Match 73 Winner
-  const ganadorPartido = textoOriginal.match(/Match ([0-9]+) Winner/);
+  // Ganador de partido
+  const ganadorPartido = textoOriginal.match(
+    /Match ([0-9]+) Winner/
+  );
+
   if (ganadorPartido) {
     const numeroPartido = Number(ganadorPartido[1]);
-    return ganadoresPartidos[numeroPartido] || traducirPlaceholder(textoOriginal);
+
+    return ganadoresPartidos[numeroPartido] ||
+      traducirPlaceholder(textoOriginal);
   }
 
-  // Perdedor de partido: Match 101 Loser
-  const perdedorPartido = textoOriginal.match(/Match ([0-9]+) Loser/);
+  // Perdedor de partido
+  const perdedorPartido = textoOriginal.match(
+    /Match ([0-9]+) Loser/
+  );
+
   if (perdedorPartido) {
     const numeroPartido = Number(perdedorPartido[1]);
-    return ganadoresPartidos[`perdedor-${numeroPartido}`] || traducirPlaceholder(textoOriginal);
+
+    return ganadoresPartidos[`perdedor-${numeroPartido}`] ||
+      traducirPlaceholder(textoOriginal);
   }
 
   return textoOriginal;
@@ -1349,14 +1529,20 @@ function obtenerPerdedorPronosticado(partido, ganador) {
 
 
 function calcularPartidosConPronosticos(partidos, predicciones) {
-  const posiciones = calcularTablasDeGrupos(partidos, predicciones);
+  const posiciones = calcularTablasDeGrupos(
+    partidos,
+    predicciones
+  );
+
   const mejoresTerceros = obtenerMejoresTerceros(posiciones);
 
   const partidosCalculados = partidos
+    .slice()
     .sort((a, b) => a.numero - b.numero)
     .map((partido) => ({ ...partido }));
 
   const ganadoresPartidos = {};
+  const tercerosAsignados = new Set();
 
   partidosCalculados.forEach((partido) => {
     if (!esFaseDeGrupos(partido)) {
@@ -1364,29 +1550,39 @@ function calcularPartidosConPronosticos(partidos, predicciones) {
         partido.equipoLocal,
         posiciones,
         mejoresTerceros,
-        ganadoresPartidos
+        ganadoresPartidos,
+        tercerosAsignados
       );
 
       partido.equipoVisitante = resolverEquipoDesdePronostico(
         partido.equipoVisitante,
         posiciones,
         mejoresTerceros,
-        ganadoresPartidos
+        ganadoresPartidos,
+        tercerosAsignados
       );
     }
 
     const prediccion = predicciones[partido.id];
 
     if (!esFaseDeGrupos(partido)) {
-      const ganador = obtenerGanadorPronosticado(partido, prediccion);
-      const perdedor = obtenerPerdedorPronosticado(partido, ganador);
+      const ganador = obtenerGanadorPronosticado(
+        partido,
+        prediccion
+      );
+
+      const perdedor = obtenerPerdedorPronosticado(
+        partido,
+        ganador
+      );
 
       if (ganador) {
         ganadoresPartidos[partido.numero] = ganador;
       }
 
       if (perdedor) {
-        ganadoresPartidos[`perdedor-${partido.numero}`] = perdedor;
+        ganadoresPartidos[`perdedor-${partido.numero}`] =
+          perdedor;
       }
     }
   });
