@@ -153,6 +153,7 @@ btnRecuperarPassword.addEventListener("click", async () => {
   }
 });
 
+/*
 btnRecalcularBracket.addEventListener("click", async () => {
   if (!usuarioActual) {
     alert("Primero debes iniciar sesión.");
@@ -171,23 +172,23 @@ btnRecalcularBracket.addEventListener("click", async () => {
     return;
   }
 
-  /*
-    Recolectamos todo lo que actualmente está escrito:
+  
+    //Recolectamos todo lo que actualmente está escrito:
 
-    - fase de grupos;
-    - eliminación directa;
-    - equipo que avanza;
-    - marcadores actuales.
-  */
+    //- fase de grupos;
+    //- eliminación directa;
+    //- equipo que avanza;
+    //- marcadores actuales.
+  
   const pronosticosActuales = recolectarPronosticosPartidos();
 
   if (!pronosticosActuales) {
     return;
   }
 
-  /*
-    Verificamos que existan resultados de fase de grupos.
-  */
+  
+   // Verificamos que existan resultados de fase de grupos.
+  
   const pronosticosGrupos = {};
 
   Object.entries(pronosticosActuales).forEach(
@@ -212,31 +213,31 @@ btnRecalcularBracket.addEventListener("click", async () => {
   }
 
   try {
-    /*
-      Mezclamos lo que estaba previamente guardado con lo que
-      actualmente está escrito en pantalla.
+    
+      //Mezclamos lo que estaba previamente guardado con lo que
+      //actualmente está escrito en pantalla.
 
-      Los datos actuales tienen prioridad.
-    */
+      //Los datos actuales tienen prioridad.
+    
     const partidosActualizados = {
       ...prediccionesUsuario,
       ...pronosticosActuales
     };
 
-    /*
-      Actualizamos primero la variable local para que el cálculo
-      utilice los datos más recientes.
-    */
+    
+      //Actualizamos primero la variable local para que el cálculo
+      //utilice los datos más recientes.
+    
     prediccionesUsuario = partidosActualizados;
     especialesUsuario = especialesActuales;
 
-    /*
+    
       Recalculamos toda la estructura del Mundial.
 
-      La función calcularPartidosConPronosticos ya contiene
-      tercerosAsignados, por lo que un mejor tercero no puede
-      utilizarse en más de un partido.
-    */
+      //La función calcularPartidosConPronosticos ya contiene
+      //tercerosAsignados, por lo que un mejor tercero no puede
+      //utilizarse en más de un partido.
+    
     const partidosCalculados = calcularPartidosConPronosticos(
       partidosGlobales,
       prediccionesUsuario
@@ -246,10 +247,10 @@ btnRecalcularBracket.addEventListener("click", async () => {
       (partido) => !esFaseDeGrupos(partido)
     );
 
-    /*
-      Guardamos en Firebase lo que el usuario tenía escrito
-      antes de volver a dibujar las llaves.
-    */
+    
+      //Guardamos en Firebase lo que el usuario tenía escrito
+      //antes de volver a dibujar las llaves.
+    
     const docRef = doc(
       db,
       "prediccionesUsuarios",
@@ -283,9 +284,9 @@ btnRecalcularBracket.addEventListener("click", async () => {
       }
     );
 
-    /*
-      Finalmente volvemos a mostrar las llaves actualizadas.
-    */
+    
+     // Finalmente volvemos a mostrar las llaves actualizadas.
+    
     renderizarBracketEliminacion(partidosEliminacion);
     renderizarPronosticosEspeciales();
 
@@ -308,6 +309,7 @@ btnRecalcularBracket.addEventListener("click", async () => {
   }
 });
 
+*/
 btnRegistroEmail.addEventListener("click", async () => {
   const nombre = nombreRegistro.value.trim();
   const email = emailRegistro.value.trim().toLowerCase();
@@ -527,8 +529,11 @@ async function cargarPartidos() {
     const partidosEliminacion = partidosCalculados.filter((partido) => !esFaseDeGrupos(partido));
 
     renderizarFaseGrupos(partidosGrupos);
-    renderizarBracketEliminacion(partidosEliminacion);
-    renderizarPronosticosEspeciales();
+// Temporalmente deshabilitado hasta finalizar la fase de grupos.
+// renderizarBracketEliminacion(partidosEliminacion);
+
+// Temporalmente deshabilitado junto con eliminación directa.
+// renderizarPronosticosEspeciales();
 
   } catch (error) {
     console.error("Error cargando partidos:", error);
@@ -1053,15 +1058,16 @@ async function guardarTodosLosPronosticos() {
     return;
   }
 
-  const pronosticosPartidos = recolectarPronosticosPartidos();
+  //const pronosticosPartidos = recolectarPronosticosPartidos();
+  const pronosticosPartidos = recolectarPronosticosFaseGrupos();
   if (!pronosticosPartidos) {
   return;
 }
-  const especiales = recolectarPronosticosEspeciales();
+  //const especiales = recolectarPronosticosEspeciales();
 
-  if (!validarPronosticosEspeciales(especiales)) {
+  /*if (!validarPronosticosEspeciales(especiales)) {
     return;
-  }
+  }*/
 
   if (Object.keys(pronosticosPartidos).length === 0) {
     alert("Todavía no has ingresado ningún pronóstico.");
@@ -1077,7 +1083,7 @@ async function guardarTodosLosPronosticos() {
       userEmail: usuarioActual.email,
       emailVerificado: usuarioActual.emailVerified,
       partidos: pronosticosPartidos,
-      especiales: especiales,
+      especiales: especialesUsuario || {},
       puntosTotales: 0,
       aciertosExactos: 0,
       aciertosResultado: 0,
@@ -1089,7 +1095,7 @@ async function guardarTodosLosPronosticos() {
     }, { merge: true });
 
     prediccionesUsuario = pronosticosPartidos;
-    especialesUsuario = especiales;
+    //especialesUsuario = especiales;
     
 
     estadoGuardadoGlobal.textContent = "Pronósticos guardados correctamente.";
