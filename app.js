@@ -1835,3 +1835,4 @@ function validarPronosticosEspeciales(especiales) {
   return true;
 }
 //cargarPartidos();
+
