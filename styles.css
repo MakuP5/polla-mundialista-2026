@@ -1495,3 +1495,59 @@ button {
   justify-content: center;
   gap: 8px;
 }
+
+/* Eliminación directa temporalmente deshabilitada */
+
+.tab-btn-disabled {
+  background: #263547;
+  color: #8fa4ba;
+  border-color: #41566c;
+  cursor: not-allowed;
+  opacity: 0.72;
+}
+
+.tab-btn-disabled:hover {
+  background: #263547;
+}
+
+.eliminacion-proximamente-card {
+  min-height: 260px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.eliminacion-bloqueada-mensaje {
+  width: min(680px, 100%);
+  display: flex;
+  align-items: flex-start;
+  gap: 18px;
+  padding: 24px;
+  border-radius: 18px;
+  background: rgba(255, 209, 102, 0.1);
+  border: 1px solid rgba(255, 209, 102, 0.4);
+}
+
+.eliminacion-bloqueada-icono {
+  font-size: 2.4rem;
+  line-height: 1;
+}
+
+.eliminacion-bloqueada-mensaje h2 {
+  margin: 0 0 8px;
+  color: #ffd166;
+}
+
+.eliminacion-bloqueada-mensaje p {
+  margin: 0;
+  color: #dbeafe;
+  line-height: 1.6;
+}
+
+@media (max-width: 600px) {
+  .eliminacion-bloqueada-mensaje {
+    flex-direction: column;
+    text-align: center;
+    align-items: center;
+  }
+}
