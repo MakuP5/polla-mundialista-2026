@@ -1413,61 +1413,55 @@ function obtenerMejoresTerceros(posiciones) {
 function resolverEquipoDesdePronostico(
   textoOriginal,
   posiciones,
-  mejoresTerceros,
   ganadoresPartidos,
-  tercerosAsignados
+  asignacionTerceros,
+  claveTercero
 ) {
   if (!textoOriginal) {
     return "Por definir";
   }
 
   // Ganador de grupo
-  const ganadorGrupo = textoOriginal.match(/Group ([A-L]) Winners/);
+  const ganadorGrupo = textoOriginal.match(
+    /Group ([A-L]) Winners/
+  );
 
   if (ganadorGrupo) {
     const grupo = ganadorGrupo[1];
 
-    return posiciones[grupo]?.[0]?.nombre ||
-      traducirPlaceholder(textoOriginal);
+    return (
+      posiciones[grupo]?.[0]?.nombre ||
+      traducirPlaceholder(textoOriginal)
+    );
   }
 
   // Segundo de grupo
-  const segundoGrupo = textoOriginal.match(/Group ([A-L]) Runners Up/);
+  const segundoGrupo = textoOriginal.match(
+    /Group ([A-L]) Runners Up/
+  );
 
   if (segundoGrupo) {
     const grupo = segundoGrupo[1];
 
-    return posiciones[grupo]?.[1]?.nombre ||
-      traducirPlaceholder(textoOriginal);
+    return (
+      posiciones[grupo]?.[1]?.nombre ||
+      traducirPlaceholder(textoOriginal)
+    );
   }
 
-  // Mejor tercero entre determinados grupos
+  // Mejor tercero previamente distribuido
   const terceroGrupo = textoOriginal.match(
     /Group ([A-L](?:\/[A-L])+) 3rd Place/
   );
 
   if (terceroGrupo) {
-    const gruposPermitidos = terceroGrupo[1].split("/");
-
-    const candidato = mejoresTerceros.find((equipo) => {
-      const perteneceAGrupoPermitido =
-        gruposPermitidos.includes(equipo.grupo);
-
-      const yaFueAsignado =
-        tercerosAsignados.has(equipo.nombre);
-
-      return perteneceAGrupoPermitido && !yaFueAsignado;
-    });
-
-    if (candidato) {
-      tercerosAsignados.add(candidato.nombre);
-      return candidato.nombre;
-    }
-
-    return traducirPlaceholder(textoOriginal);
+    return (
+      asignacionTerceros[claveTercero] ||
+      traducirPlaceholder(textoOriginal)
+    );
   }
 
-  // Ganador de partido
+  // Ganador de partido anterior
   const ganadorPartido = textoOriginal.match(
     /Match ([0-9]+) Winner/
   );
@@ -1475,11 +1469,13 @@ function resolverEquipoDesdePronostico(
   if (ganadorPartido) {
     const numeroPartido = Number(ganadorPartido[1]);
 
-    return ganadoresPartidos[numeroPartido] ||
-      traducirPlaceholder(textoOriginal);
+    return (
+      ganadoresPartidos[numeroPartido] ||
+      traducirPlaceholder(textoOriginal)
+    );
   }
 
-  // Perdedor de partido
+  // Perdedor de partido anterior
   const perdedorPartido = textoOriginal.match(
     /Match ([0-9]+) Loser/
   );
@@ -1487,8 +1483,10 @@ function resolverEquipoDesdePronostico(
   if (perdedorPartido) {
     const numeroPartido = Number(perdedorPartido[1]);
 
-    return ganadoresPartidos[`perdedor-${numeroPartido}`] ||
-      traducirPlaceholder(textoOriginal);
+    return (
+      ganadoresPartidos[`perdedor-${numeroPartido}`] ||
+      traducirPlaceholder(textoOriginal)
+    );
   }
 
   return textoOriginal;
@@ -1527,6 +1525,101 @@ function obtenerPerdedorPronosticado(partido, ganador) {
   return null;
 }
 
+function calcularAsignacionTerceros(partidos, mejoresTerceros) {
+  const espaciosTerceros = [];
+
+  /*
+    Reunimos todos los lugares de dieciseisavos que necesitan
+    un mejor tercero.
+  */
+  partidos
+    .filter((partido) => traducirFase(partido.fase) === "Dieciseisavos de final")
+    .forEach((partido) => {
+      const lados = [
+        {
+          lado: "local",
+          texto: partido.equipoLocal
+        },
+        {
+          lado: "visitante",
+          texto: partido.equipoVisitante
+        }
+      ];
+
+      lados.forEach(({ lado, texto }) => {
+        const coincidencia = texto?.match(
+          /Group ([A-L](?:\/[A-L])+) 3rd Place/
+        );
+
+        if (!coincidencia) {
+          return;
+        }
+
+        espaciosTerceros.push({
+          clave: `${partido.id}-${lado}`,
+          partidoId: partido.id,
+          lado,
+          gruposPermitidos: coincidencia[1].split("/")
+        });
+      });
+    });
+
+  /*
+    Primero resolvemos los espacios más restrictivos:
+    aquellos que admiten menos grupos.
+  */
+  espaciosTerceros.sort(
+    (a, b) =>
+      a.gruposPermitidos.length -
+      b.gruposPermitidos.length
+  );
+
+  const asignaciones = {};
+  const equiposUtilizados = new Set();
+
+  function intentarAsignar(indice) {
+    if (indice >= espaciosTerceros.length) {
+      return true;
+    }
+
+    const espacio = espaciosTerceros[indice];
+
+    const candidatos = mejoresTerceros.filter((equipo) => {
+      return (
+        espacio.gruposPermitidos.includes(equipo.grupo) &&
+        !equiposUtilizados.has(equipo.nombre)
+      );
+    });
+
+    for (const candidato of candidatos) {
+      asignaciones[espacio.clave] = candidato.nombre;
+      equiposUtilizados.add(candidato.nombre);
+
+      if (intentarAsignar(indice + 1)) {
+        return true;
+      }
+
+      delete asignaciones[espacio.clave];
+      equiposUtilizados.delete(candidato.nombre);
+    }
+
+    return false;
+  }
+
+  const asignacionCompleta = intentarAsignar(0);
+
+  if (!asignacionCompleta) {
+    console.error(
+      "No fue posible distribuir los mejores terceros en todos los cruces.",
+      {
+        espaciosTerceros,
+        mejoresTerceros
+      }
+    );
+  }
+
+  return asignaciones;
+}
 
 function calcularPartidosConPronosticos(partidos, predicciones) {
   const posiciones = calcularTablasDeGrupos(
@@ -1536,30 +1629,38 @@ function calcularPartidosConPronosticos(partidos, predicciones) {
 
   const mejoresTerceros = obtenerMejoresTerceros(posiciones);
 
+  /*
+    Distribuimos los ocho terceros antes de comenzar
+    a resolver los partidos.
+  */
+  const asignacionTerceros = calcularAsignacionTerceros(
+    partidos,
+    mejoresTerceros
+  );
+
   const partidosCalculados = partidos
     .slice()
     .sort((a, b) => a.numero - b.numero)
     .map((partido) => ({ ...partido }));
 
   const ganadoresPartidos = {};
-  const tercerosAsignados = new Set();
 
   partidosCalculados.forEach((partido) => {
     if (!esFaseDeGrupos(partido)) {
       partido.equipoLocal = resolverEquipoDesdePronostico(
         partido.equipoLocal,
         posiciones,
-        mejoresTerceros,
         ganadoresPartidos,
-        tercerosAsignados
+        asignacionTerceros,
+        `${partido.id}-local`
       );
 
       partido.equipoVisitante = resolverEquipoDesdePronostico(
         partido.equipoVisitante,
         posiciones,
-        mejoresTerceros,
         ganadoresPartidos,
-        tercerosAsignados
+        asignacionTerceros,
+        `${partido.id}-visitante`
       );
     }
 
