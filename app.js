@@ -116,7 +116,7 @@ let especialesUsuario = {};
 // BLOQUEO TEMPORAL DEL BOTÓN DE GUARDADO
 // =====================================================
 
-const GUARDADO_TEMPORALMENTE_CERRADO = false;
+const GUARDADO_TEMPORALMENTE_CERRADO = true;
 
 // =====================================================
 // BLOQUEO TEMPORAL DEL BOTÓN DE GUARDADO
