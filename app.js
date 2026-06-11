@@ -100,6 +100,56 @@ let partidosGlobales = [];
 let prediccionesUsuario = {};
 let especialesUsuario = {};
 
+// =====================================================
+// BLOQUEO TEMPORAL DEL BOTÓN DE GUARDADO
+// =====================================================
+// =====================================================
+// BLOQUEO TEMPORAL DEL BOTÓN DE GUARDADO
+// =====================================================
+// =====================================================
+// BLOQUEO TEMPORAL DEL BOTÓN DE GUARDADO
+// =====================================================
+// =====================================================
+// BLOQUEO TEMPORAL DEL BOTÓN DE GUARDADO
+// =====================================================
+// =====================================================
+// BLOQUEO TEMPORAL DEL BOTÓN DE GUARDADO
+// =====================================================
+
+const GUARDADO_TEMPORALMENTE_CERRADO = false;
+
+// =====================================================
+// BLOQUEO TEMPORAL DEL BOTÓN DE GUARDADO
+// =====================================================
+// =====================================================
+// BLOQUEO TEMPORAL DEL BOTÓN DE GUARDADO
+// =====================================================
+// =====================================================
+// BLOQUEO TEMPORAL DEL BOTÓN DE GUARDADO
+// =====================================================
+// =====================================================
+// BLOQUEO TEMPORAL DEL BOTÓN DE GUARDADO
+// =====================================================
+// =====================================================
+// BLOQUEO TEMPORAL DEL BOTÓN DE GUARDADO
+// =====================================================
+
+function deshabilitarBotonGuardadoTemporalmente() {
+  if (!btnGuardarTodo || !estadoGuardadoGlobal) {
+    return;
+  }
+
+  if (GUARDADO_TEMPORALMENTE_CERRADO) {
+    btnGuardarTodo.disabled = true;
+    btnGuardarTodo.classList.add("btn-guardar-bloqueado");
+    btnGuardarTodo.textContent = "🔒 Pronósticos cerrados temporalmente";
+
+    estadoGuardadoGlobal.textContent =
+      "Los pronósticos de fase de grupos se cerraron porque los partidos ya iniciaron. El botón se habilitará nuevamente cuando termine la fase de grupos para completar los pronósticos de eliminación directa.";
+  }
+}
+
+
 function mostrarPanelLogin() {
   tabLoginAuth.classList.add("active");
   tabRegistroAuth.classList.remove("active");
@@ -484,6 +534,7 @@ btnVerificarEstado.addEventListener("click", async () => {
 });
 
 btnGuardarTodo.addEventListener("click", guardarTodosLosPronosticos);
+deshabilitarBotonGuardadoTemporalmente();
 
 onAuthStateChanged(auth, async (user) => {
   if (user) {
