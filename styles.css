@@ -1551,3 +1551,20 @@ button {
     align-items: center;
   }
 }
+
+/* =====================================================
+   BOTÓN DE GUARDADO CERRADO TEMPORALMENTE
+===================================================== */
+
+.btn-guardar-bloqueado,
+.btn-guardar-bloqueado:hover {
+  background: #41566c;
+  color: #dbeafe;
+  border: 1px solid #64748b;
+  cursor: not-allowed;
+  opacity: 0.8;
+}
+
+.btn-guardar-bloqueado:disabled {
+  cursor: not-allowed;
+}
