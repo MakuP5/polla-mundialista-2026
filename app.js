@@ -75,6 +75,697 @@ const especialSubcampeon = document.getElementById("especialSubcampeon");
 const especialGoleador = document.getElementById("especialGoleador");
 const especialMejorJugador = document.getElementById("especialMejorJugador");
 const estadoEspeciales = document.getElementById("estadoEspeciales");
+const btnRecalcularPuntajes = document.getElementById("btnRecalcularPuntajes");
+
+// =====================================================
+// RESULTADOS OFICIALES Y PUNTUACIÓN
+// =====================================================
+
+const PUNTOS_RESULTADO_GRUPOS = 1;
+const PUNTOS_MARCADOR_EXACTO = 2;
+
+const PUNTOS_CLASIFICADO = 1;
+const PUNTOS_POSICION_CLASIFICADO = 1;
+
+const PUNTOS_DIECISEISAVOS = 2;
+const PUNTOS_OCTAVOS = 3;
+const PUNTOS_CUARTOS = 4;
+const PUNTOS_SEMIFINALES = 5;
+
+const PUNTOS_CAMPEON = 5;
+const PUNTOS_SUBCAMPEON = 4;
+
+const PUNTOS_GOLEADOR = 5;
+const PUNTOS_MEJOR_JUGADOR = 5;
+
+
+// =====================================================
+// RESULTADOS OFICIALES Y PUNTUACIÓN
+// =====================================================
+// =====================================================
+// RESULTADOS OFICIALES Y PUNTUACIÓN
+// =====================================================
+// =====================================================
+// RESULTADOS OFICIALES Y PUNTUACIÓN
+// =====================================================
+
+const resultadosOficiales = {
+  "partido-001": {
+    golesLocal: 2,
+    golesVisitante: 0
+  },
+
+  "partido-002": {
+    golesLocal: 2,
+    golesVisitante: 1
+  },
+
+  "partido-003": {
+    golesLocal: 1,
+    golesVisitante: 1
+  },
+
+  "partido-004": {
+    golesLocal: 4,
+    golesVisitante: 1
+  }
+
+  // Agregar nuevos resultados reales aquí.
+};
+// =====================================================
+// RESULTADOS OFICIALES Y PUNTUACIÓN
+// =====================================================
+// =====================================================
+// RESULTADOS OFICIALES Y PUNTUACIÓN
+// =====================================================
+// =====================================================
+// RESULTADOS OFICIALES Y PUNTUACIÓN
+// =====================================================
+
+async function cargarListaParticipantes() {
+  if (!rankingContainer) {
+    return;
+  }
+
+  rankingContainer.innerHTML = `
+    <p class="ranking-cargando">Cargando participantes...</p>
+  `;
+
+  try {
+    const usuariosRef = collection(db, "prediccionesUsuarios");
+    const usuariosSnap = await getDocs(usuariosRef);
+
+    if (usuariosSnap.empty) {
+      rankingContainer.innerHTML = `
+        <div class="ranking-vacio">
+          <h3>No hay participantes todavía</h3>
+          <p>Aún no existen registros de pronósticos guardados.</p>
+        </div>
+      `;
+      return;
+    }
+
+    const participantes = [];
+
+    /*
+      Correos que no se mostrarán en la lista pública.
+      Esto permite seguir usando tu cuenta para pruebas sin borrarla de Firebase.
+    */
+    const correosOcultos = [
+      "acalleb@ups.edu.ec"
+    ];
+
+    usuariosSnap.forEach((docSnap) => {
+      const data = docSnap.data();
+
+      const email = (data.userEmail || "").toLowerCase();
+
+      if (correosOcultos.includes(email)) {
+        return;
+      }
+
+      participantes.push({
+        nombre: data.userName || "Participante sin nombre",
+        email: data.userEmail || ""
+      });
+    });
+
+    participantes.sort((a, b) =>
+      a.nombre.localeCompare(b.nombre)
+    );
+
+    if (participantes.length === 0) {
+      rankingContainer.innerHTML = `
+        <div class="ranking-vacio">
+          <h3>No hay participantes visibles todavía</h3>
+          <p>
+            Existen registros, pero por ahora solo corresponden a usuarios de prueba.
+          </p>
+        </div>
+      `;
+      return;
+    }
+
+    rankingContainer.innerHTML = `
+      <div class="ranking-resumen">
+        <h3>Total de participantes: ${participantes.length}</h3>
+        <p>
+          Esta lista muestra los usuarios que ya guardaron sus pronósticos.
+        </p>
+      </div>
+
+      <div class="ranking-tabla-wrapper">
+        <table class="ranking-tabla">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Participante</th>
+              <th>Correo</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            ${participantes
+              .map((participante, index) => `
+                <tr>
+                  <td>${index + 1}</td>
+                  <td class="ranking-nombre">${participante.nombre}</td>
+                  <td>${participante.email}</td>
+                </tr>
+              `)
+              .join("")}
+          </tbody>
+        </table>
+      </div>
+    `;
+
+  } catch (error) {
+    console.error("Error cargando participantes:", error);
+
+    rankingContainer.innerHTML = `
+      <div class="ranking-vacio">
+        <h3>No se pudo cargar la lista</h3>
+        <p>Intenta nuevamente en unos minutos.</p>
+      </div>
+    `;
+  }
+}
+
+function obtenerTipoResultado(golesLocal, golesVisitante) {
+  if (golesLocal > golesVisitante) {
+    return "local";
+  }
+
+  if (golesVisitante > golesLocal) {
+    return "visitante";
+  }
+
+  return "empate";
+}
+
+function normalizarTextoPuntuacion(texto) {
+  if (!texto) {
+    return "";
+  }
+
+  return texto
+    .toString()
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+}
+
+function obtenerPuntosPorFaseEliminacion(fase) {
+  const faseTraducida = traducirFase(fase);
+
+  if (faseTraducida === "Dieciseisavos de final") {
+    return PUNTOS_DIECISEISAVOS;
+  }
+
+  if (faseTraducida === "Octavos de final") {
+    return PUNTOS_OCTAVOS;
+  }
+
+  if (faseTraducida === "Cuartos de final") {
+    return PUNTOS_CUARTOS;
+  }
+
+  if (faseTraducida === "Semifinales") {
+    return PUNTOS_SEMIFINALES;
+  }
+
+  return 0;
+}
+
+function calcularPuntosFaseGrupos(prediccion, resultadoReal) {
+  if (!prediccion || !resultadoReal) {
+    return {
+      puntos: 0,
+      aciertoExacto: false,
+      aciertoResultado: false,
+      estadoPuntuacion: "pendiente"
+    };
+  }
+
+  function construirPrediccionesDesdeResultadosOficiales() {
+    const prediccionesOficiales = {};
+  
+    Object.entries(resultadosOficiales).forEach(
+      ([partidoId, resultado]) => {
+        prediccionesOficiales[partidoId] = {
+          golesLocal: resultado.golesLocal,
+          golesVisitante: resultado.golesVisitante
+        };
+      }
+    );
+  
+    return prediccionesOficiales;
+  }
+  
+  function calcularPuntosClasificacionGrupos(prediccionesUsuarioActual) {
+    const prediccionesOficiales =
+      construirPrediccionesDesdeResultadosOficiales();
+  
+    const posicionesUsuario = calcularTablasDeGrupos(
+      partidosGlobales,
+      prediccionesUsuarioActual
+    );
+  
+    const posicionesOficiales = calcularTablasDeGrupos(
+      partidosGlobales,
+      prediccionesOficiales
+    );
+  
+    let puntosClasificacion = 0;
+    let aciertosClasificados = 0;
+  
+    Object.keys(posicionesOficiales).forEach((grupo) => {
+      const tablaOficial = posicionesOficiales[grupo];
+      const tablaUsuario = posicionesUsuario[grupo];
+  
+      if (!tablaOficial || !tablaUsuario) {
+        return;
+      }
+  
+      /*
+        Solo puntuamos el grupo si ya existen al menos dos posiciones oficiales.
+        Para usarlo al final de fase de grupos, esto estará completo.
+      */
+      const clasificadosOficiales = tablaOficial.slice(0, 2);
+      const clasificadosUsuario = tablaUsuario.slice(0, 2);
+  
+      clasificadosUsuario.forEach((equipoUsuario, indiceUsuario) => {
+        const indiceOficial = clasificadosOficiales.findIndex(
+          (equipoOficial) =>
+            normalizarTextoPuntuacion(equipoOficial.nombre) ===
+            normalizarTextoPuntuacion(equipoUsuario.nombre)
+        );
+  
+        if (indiceOficial === -1) {
+          return;
+        }
+  
+        // 1 punto por clasificado correcto.
+        puntosClasificacion += PUNTOS_CLASIFICADO;
+        aciertosClasificados += 1;
+  
+        // +1 si además acertó si era primero o segundo.
+        if (indiceOficial === indiceUsuario) {
+          puntosClasificacion += PUNTOS_POSICION_CLASIFICADO;
+        }
+      });
+    });
+  
+    return {
+      puntosClasificacion,
+      aciertosClasificados
+    };
+  }
+
+  function calcularPuntosEliminacion(prediccion, resultadoReal, partido) {
+    if (!prediccion || !resultadoReal || !partido) {
+      return {
+        puntos: 0,
+        estadoPuntuacion: "pendiente"
+      };
+    }
+  
+    const equipoAvanzaUsuario = normalizarTextoPuntuacion(
+      prediccion.equipoAvanza
+    );
+  
+    const equipoAvanzaOficial = normalizarTextoPuntuacion(
+      resultadoReal.equipoAvanza
+    );
+  
+    if (!equipoAvanzaUsuario || !equipoAvanzaOficial) {
+      return {
+        puntos: 0,
+        estadoPuntuacion: "pendiente"
+      };
+    }
+  
+    if (equipoAvanzaUsuario === equipoAvanzaOficial) {
+      return {
+        puntos: obtenerPuntosPorFaseEliminacion(partido.fase),
+        estadoPuntuacion: "puntuado"
+      };
+    }
+  
+    return {
+      puntos: 0,
+      estadoPuntuacion: "puntuado"
+    };
+  }
+
+  function calcularPuntosFinal(prediccionFinal, resultadoFinal) {
+    let puntos = 0;
+    let acertoCampeon = false;
+    let acertoSubcampeon = false;
+  
+    if (!prediccionFinal || !resultadoFinal) {
+      return {
+        puntos,
+        acertoCampeon,
+        acertoSubcampeon
+      };
+    }
+  
+    const campeonUsuario = normalizarTextoPuntuacion(
+      prediccionFinal.equipoAvanza
+    );
+  
+    const campeonOficial = normalizarTextoPuntuacion(
+      resultadoFinal.campeon
+    );
+  
+    const subcampeonOficial = normalizarTextoPuntuacion(
+      resultadoFinal.subcampeon
+    );
+  
+    let subcampeonUsuario = "";
+  
+    if (
+      prediccionFinal.equipoLocal &&
+      prediccionFinal.equipoVisitante &&
+      prediccionFinal.equipoAvanza
+    ) {
+      const local = normalizarTextoPuntuacion(
+        prediccionFinal.equipoLocal
+      );
+  
+      const visitante = normalizarTextoPuntuacion(
+        prediccionFinal.equipoVisitante
+      );
+  
+      if (campeonUsuario === local) {
+        subcampeonUsuario = visitante;
+      } else if (campeonUsuario === visitante) {
+        subcampeonUsuario = local;
+      }
+    }
+  
+    if (campeonUsuario && campeonUsuario === campeonOficial) {
+      puntos += PUNTOS_CAMPEON;
+      acertoCampeon = true;
+    }
+  
+    if (
+      subcampeonUsuario &&
+      subcampeonUsuario === subcampeonOficial
+    ) {
+      puntos += PUNTOS_SUBCAMPEON;
+      acertoSubcampeon = true;
+    }
+  
+    return {
+      puntos,
+      acertoCampeon,
+      acertoSubcampeon
+    };
+  }
+
+//___________________________________________________________
+//___________________________________________________________
+//___________________________________________________________
+//___________________________________________________________
+//_________________RESULTADOS ESPECIALES_____________________
+//___________________________________________________________
+//___________________________________________________________
+//___________________________________________________________
+
+  const resultadosEspeciales = {
+    goleador: "",
+    mejorJugador: ""
+  };
+
+  //___________________________________________________________
+//___________________________________________________________
+//___________________________________________________________
+//___________________________________________________________
+//_________________RESULTADOS ESPECIALES_____________________
+//___________________________________________________________
+//___________________________________________________________
+//___________________________________________________________
+
+function calcularPuntosEspeciales(especialesUsuarioActual) {
+  let puntos = 0;
+  let acertoGoleador = false;
+  let acertoMejorJugador = false;
+
+  if (
+    resultadosEspeciales.goleador &&
+    normalizarTextoPuntuacion(especialesUsuarioActual.goleador) ===
+      normalizarTextoPuntuacion(resultadosEspeciales.goleador)
+  ) {
+    puntos += PUNTOS_GOLEADOR;
+    acertoGoleador = true;
+  }
+
+  if (
+    resultadosEspeciales.mejorJugador &&
+    normalizarTextoPuntuacion(especialesUsuarioActual.mejorJugador) ===
+      normalizarTextoPuntuacion(resultadosEspeciales.mejorJugador)
+  ) {
+    puntos += PUNTOS_MEJOR_JUGADOR;
+    acertoMejorJugador = true;
+  }
+
+  return {
+    puntos,
+    acertoGoleador,
+    acertoMejorJugador
+  };
+}
+
+async function recalcularPuntajesUsuarios() {
+  try {
+    const usuariosRef = collection(db, "prediccionesUsuarios");
+    const usuariosSnap = await getDocs(usuariosRef);
+
+    if (usuariosSnap.empty) {
+      alert("No hay predicciones de usuarios para puntuar.");
+      return;
+    }
+
+    let usuariosProcesados = 0;
+
+    for (const usuarioDoc of usuariosSnap.docs) {
+      const data = usuarioDoc.data();
+
+      const partidosUsuario = data.partidos || {};
+      const especialesDelUsuario = data.especiales || {};
+
+      let puntosTotales = 0;
+      let aciertosExactos = 0;
+      let aciertosResultado = 0;
+      let aciertosClasificados = 0;
+
+      let acertoCampeon = false;
+      let acertoSubcampeon = false;
+      let acertoGoleador = false;
+
+      const partidosActualizados = {};
+
+      Object.entries(partidosUsuario).forEach(
+        ([partidoId, prediccion]) => {
+          const partido = partidosGlobales.find(
+            (p) => p.id === partidoId
+          );
+
+          const resultadoReal = resultadosOficiales[partidoId];
+
+          if (!partido || !resultadoReal) {
+            partidosActualizados[partidoId] = {
+              ...prediccion,
+              estadoPuntuacion:
+                prediccion.estadoPuntuacion || "pendiente"
+            };
+
+            return;
+          }
+
+          if (esFaseDeGrupos(partido)) {
+            const puntuacion = calcularPuntosFaseGrupos(
+              prediccion,
+              resultadoReal
+            );
+
+            puntosTotales += puntuacion.puntos;
+
+            if (puntuacion.aciertoExacto) {
+              aciertosExactos += 1;
+            }
+
+            if (
+              puntuacion.aciertoResultado &&
+              !puntuacion.aciertoExacto
+            ) {
+              aciertosResultado += 1;
+            }
+
+            partidosActualizados[partidoId] = {
+              ...prediccion,
+              resultadoRealLocal: resultadoReal.golesLocal,
+              resultadoRealVisitante: resultadoReal.golesVisitante,
+              puntos: puntuacion.puntos,
+              estadoPuntuacion: puntuacion.estadoPuntuacion
+            };
+
+            return;
+          }
+
+          const faseTraducida = traducirFase(partido.fase);
+
+          if (faseTraducida === "Final") {
+            const puntuacionFinal = calcularPuntosFinal(
+              prediccion,
+              resultadoReal
+            );
+
+            puntosTotales += puntuacionFinal.puntos;
+
+            if (puntuacionFinal.acertoCampeon) {
+              acertoCampeon = true;
+            }
+
+            if (puntuacionFinal.acertoSubcampeon) {
+              acertoSubcampeon = true;
+            }
+
+            partidosActualizados[partidoId] = {
+              ...prediccion,
+              puntos: puntuacionFinal.puntos,
+              estadoPuntuacion: "puntuado"
+            };
+
+            return;
+          }
+
+          const puntuacionEliminacion = calcularPuntosEliminacion(
+            prediccion,
+            resultadoReal,
+            partido
+          );
+
+          puntosTotales += puntuacionEliminacion.puntos;
+
+          partidosActualizados[partidoId] = {
+            ...prediccion,
+            resultadoRealLocal: resultadoReal.golesLocal,
+            resultadoRealVisitante: resultadoReal.golesVisitante,
+            equipoAvanzaOficial: resultadoReal.equipoAvanza || null,
+            puntos: puntuacionEliminacion.puntos,
+            estadoPuntuacion:
+              puntuacionEliminacion.estadoPuntuacion
+          };
+        }
+      );
+
+      /*
+        Clasificación a dieciseisavos:
+        Se recomienda ejecutar esta parte cuando termine
+        toda la fase de grupos.
+      */
+      const clasificacion = calcularPuntosClasificacionGrupos(
+        partidosUsuario
+      );
+
+      puntosTotales += clasificacion.puntosClasificacion;
+      aciertosClasificados =
+        clasificacion.aciertosClasificados;
+
+      const puntosEspeciales = calcularPuntosEspeciales(
+        especialesDelUsuario
+      );
+
+      puntosTotales += puntosEspeciales.puntos;
+
+      if (puntosEspeciales.acertoGoleador) {
+        acertoGoleador = true;
+      }
+
+      await setDoc(
+        doc(db, "prediccionesUsuarios", usuarioDoc.id),
+        {
+          partidos: partidosActualizados,
+
+          puntosTotales,
+          aciertosExactos,
+          aciertosResultado,
+          aciertosClasificados,
+
+          acertoCampeon,
+          acertoSubcampeon,
+          acertoGoleador,
+
+          fechaPuntuacion: serverTimestamp()
+        },
+        {
+          merge: true
+        }
+      );
+
+      usuariosProcesados += 1;
+    }
+
+    alert(
+      `Puntuación actualizada para ${usuariosProcesados} usuarios.`
+    );
+    await cargarRanking();
+
+  } catch (error) {
+    console.error("Error recalculando puntajes:", error);
+    alert("No se pudo recalcular la puntuación.");
+  }
+}
+
+  const predLocal = Number(prediccion.golesLocal);
+  const predVisitante = Number(prediccion.golesVisitante);
+
+  const realLocal = Number(resultadoReal.golesLocal);
+  const realVisitante = Number(resultadoReal.golesVisitante);
+
+  const marcadorExacto =
+    predLocal === realLocal &&
+    predVisitante === realVisitante;
+
+  if (marcadorExacto) {
+    return {
+      puntos: PUNTOS_MARCADOR_EXACTO,
+      aciertoExacto: true,
+      aciertoResultado: true,
+      estadoPuntuacion: "puntuado"
+    };
+  }
+
+  const resultadoPronosticado = obtenerTipoResultado(
+    predLocal,
+    predVisitante
+  );
+
+  const resultadoOficial = obtenerTipoResultado(
+    realLocal,
+    realVisitante
+  );
+
+  if (resultadoPronosticado === resultadoOficial) {
+    return {
+      puntos: PUNTOS_RESULTADO_GRUPOS,
+      aciertoExacto: false,
+      aciertoResultado: true,
+      estadoPuntuacion: "puntuado"
+    };
+  }
+
+  return {
+    puntos: 0,
+    aciertoExacto: false,
+    aciertoResultado: false,
+    estadoPuntuacion: "puntuado"
+  };
+}
 
 botonesTabs.forEach((boton) => {
   boton.addEventListener("click", () => {
@@ -536,6 +1227,10 @@ btnVerificarEstado.addEventListener("click", async () => {
 btnGuardarTodo.addEventListener("click", guardarTodosLosPronosticos);
 deshabilitarBotonGuardadoTemporalmente();
 
+if (btnRecalcularPuntajes) {
+  btnRecalcularPuntajes.addEventListener("click", recalcularPuntajesUsuarios);
+}
+
 onAuthStateChanged(auth, async (user) => {
   if (user) {
     await user.reload();
@@ -585,6 +1280,8 @@ async function cargarPartidos() {
 
 // Temporalmente deshabilitado junto con eliminación directa.
 // renderizarPronosticosEspeciales();
+await cargarListaParticipantes();
+//  await cargarRanking();
 
   } catch (error) {
     console.error("Error cargando partidos:", error);
@@ -964,6 +1661,179 @@ async function cargarPrediccionesUsuario() {
     console.error("Error cargando predicciones del usuario:", error);
     estadoGuardadoGlobal.textContent = "No se pudieron cargar tus pronósticos guardados.";
   }
+}
+
+async function cargarRanking() {
+  if (!rankingContainer) {
+    return;
+  }
+
+  rankingContainer.innerHTML = `
+    <p class="ranking-cargando">Cargando ranking...</p>
+  `;
+
+  try {
+    const rankingRef = collection(db, "prediccionesUsuarios");
+    const rankingSnap = await getDocs(rankingRef);
+
+    if (rankingSnap.empty) {
+      rankingContainer.innerHTML = `
+        <div class="ranking-vacio">
+          <h3>Ranking todavía no disponible</h3>
+          <p>
+            Aún no existen pronósticos puntuados.
+          </p>
+        </div>
+      `;
+
+      return;
+    }
+
+    const participantes = [];
+
+    rankingSnap.forEach((docSnap) => {
+      const data = docSnap.data();
+
+      participantes.push({
+        id: docSnap.id,
+        nombre: data.userName || data.userEmail || "Participante",
+        email: data.userEmail || "",
+        puntosTotales: data.puntosTotales || 0,
+        aciertosExactos: data.aciertosExactos || 0,
+        aciertosResultado: data.aciertosResultado || 0,
+        aciertosClasificados: data.aciertosClasificados || 0,
+        acertoCampeon: data.acertoCampeon || false,
+        acertoSubcampeon: data.acertoSubcampeon || false,
+        acertoGoleador: data.acertoGoleador || false
+      });
+    });
+
+    participantes.sort((a, b) => {
+      if (b.puntosTotales !== a.puntosTotales) {
+        return b.puntosTotales - a.puntosTotales;
+      }
+
+      if (b.aciertosExactos !== a.aciertosExactos) {
+        return b.aciertosExactos - a.aciertosExactos;
+      }
+
+      if (b.aciertosClasificados !== a.aciertosClasificados) {
+        return b.aciertosClasificados - a.aciertosClasificados;
+      }
+
+      if (Number(b.acertoCampeon) !== Number(a.acertoCampeon)) {
+        return Number(b.acertoCampeon) - Number(a.acertoCampeon);
+      }
+
+      if (Number(b.acertoSubcampeon) !== Number(a.acertoSubcampeon)) {
+        return Number(b.acertoSubcampeon) - Number(a.acertoSubcampeon);
+      }
+
+      if (Number(b.acertoGoleador) !== Number(a.acertoGoleador)) {
+        return Number(b.acertoGoleador) - Number(a.acertoGoleador);
+      }
+
+      return a.nombre.localeCompare(b.nombre);
+    });
+
+    rankingContainer.innerHTML = `
+      <div class="ranking-resumen">
+        <h3>Tabla de posiciones</h3>
+        <p>
+          El ranking se ordena por puntaje total y aplica los criterios de desempate del reglamento.
+        </p>
+      </div>
+
+      <div class="ranking-tabla-wrapper">
+        <table class="ranking-tabla">
+          <thead>
+            <tr>
+              <th>Pos.</th>
+              <th>Participante</th>
+              <th>Puntos</th>
+              <th>Exactos</th>
+              <th>Clasificados</th>
+              <th>Campeón</th>
+              <th>Subcampeón</th>
+              <th>Goleador</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            ${participantes
+              .map((participante, index) => {
+                const posicion = index + 1;
+
+                return `
+                  <tr class="${posicion <= 3 ? "ranking-top" : ""}">
+                    <td class="ranking-posicion">
+                      ${obtenerMedallaRanking(posicion)}
+                    </td>
+
+                    <td class="ranking-nombre">
+                      ${participante.nombre}
+                    </td>
+
+                    <td class="ranking-puntos">
+                      ${participante.puntosTotales}
+                    </td>
+
+                    <td>
+                      ${participante.aciertosExactos}
+                    </td>
+
+                    <td>
+                      ${participante.aciertosClasificados}
+                    </td>
+
+                    <td>
+                      ${participante.acertoCampeon ? "✅" : "—"}
+                    </td>
+
+                    <td>
+                      ${participante.acertoSubcampeon ? "✅" : "—"}
+                    </td>
+
+                    <td>
+                      ${participante.acertoGoleador ? "✅" : "—"}
+                    </td>
+                  </tr>
+                `;
+              })
+              .join("")}
+          </tbody>
+        </table>
+      </div>
+    `;
+
+  } catch (error) {
+    console.error("Error cargando ranking:", error);
+
+    rankingContainer.innerHTML = `
+      <div class="ranking-vacio">
+        <h3>No se pudo cargar el ranking</h3>
+        <p>
+          Intenta nuevamente en unos minutos.
+        </p>
+      </div>
+    `;
+  }
+}
+
+function obtenerMedallaRanking(posicion) {
+  if (posicion === 1) {
+    return "🥇";
+  }
+
+  if (posicion === 2) {
+    return "🥈";
+  }
+
+  if (posicion === 3) {
+    return "🥉";
+  }
+
+  return posicion;
 }
 
 function obtenerNombreEquipoDesdeTarjeta(partidoId, tipo) {
