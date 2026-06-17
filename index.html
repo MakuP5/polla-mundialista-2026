@@ -224,6 +224,7 @@
         🔒 Eliminación directa
       </button>
       <button class="tab-btn" data-tab="tab-ranking">Ranking</button>
+      <button class="tab-btn hidden" id="btnTabAdmin" data-tab="tab-admin">  Administración </button>
     </nav>
 
 <div class="guardar-global-panel">
@@ -579,7 +580,28 @@ Más adelante se habilitará una nueva etapa para registrar los pronósticos de 
 </section>
 
 
+<section id="tab-admin" class="tab-content">
+  <div class="card">
+    <h2>Panel de administración</h2>
 
+    <p class="admin-intro">
+      En esta sección se muestran los pronósticos guardados por los participantes.
+      Este panel solo está disponible para el usuario administrador.
+    </p>
+
+    <button 
+      id="btnActualizarAdmin" 
+      class="btn-guardar-todo" 
+      type="button"
+    >
+      🔄 Actualizar datos
+    </button>
+
+    <div id="adminContainer">
+      <p>Cargando datos de administración...</p>
+    </div>
+  </div>
+</section>
 
 </main>
 
