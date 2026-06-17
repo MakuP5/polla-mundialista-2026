@@ -1726,3 +1726,120 @@ button {
   text-align: center;
   color: #dbeafe;
 }
+
+
+/* =====================================================
+   PANEL DE ADMINISTRACIÓN
+===================================================== */
+
+.admin-intro {
+  margin-bottom: 18px;
+  color: #dbeafe;
+  line-height: 1.6;
+}
+
+.admin-resumen {
+  margin: 18px 0;
+  padding: 16px;
+  border-radius: 16px;
+  background: rgba(255, 209, 102, 0.1);
+  border: 1px solid rgba(255, 209, 102, 0.35);
+}
+
+.admin-resumen h3 {
+  margin: 0 0 6px;
+  color: #ffd166;
+}
+
+.admin-resumen p {
+  margin: 0;
+  color: #dbeafe;
+}
+
+.admin-tabla-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  margin-top: 16px;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.admin-tabla {
+  width: 100%;
+  min-width: 920px;
+  border-collapse: collapse;
+  background: rgba(7, 17, 31, 0.9);
+}
+
+.admin-tabla th,
+.admin-tabla td {
+  padding: 12px;
+  text-align: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  color: #e5eef8;
+}
+
+.admin-tabla th {
+  color: #ffd166;
+  font-size: 0.82rem;
+  text-transform: uppercase;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.admin-nombre {
+  text-align: left !important;
+  font-weight: 800;
+}
+
+.admin-btn-detalle {
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: #47b5ff;
+  color: #07111f;
+  font-weight: 800;
+}
+
+.admin-btn-detalle:hover {
+  background: #7dd3fc;
+}
+
+.admin-detalle-container {
+  margin-top: 24px;
+}
+
+.admin-detalle {
+  padding: 18px;
+  border-radius: 18px;
+  background: rgba(71, 181, 255, 0.08);
+  border: 1px solid rgba(71, 181, 255, 0.25);
+}
+
+.admin-detalle h3 {
+  margin-top: 0;
+  color: #ffffff;
+}
+
+.admin-detalle p {
+  color: #dbeafe;
+}
+
+.admin-tabla-detalle {
+  min-width: 860px;
+}
+
+.admin-alerta {
+  margin-top: 18px;
+  padding: 18px;
+  border-radius: 16px;
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.35);
+}
+
+.admin-alerta h3 {
+  color: #fecaca;
+  margin-top: 0;
+}
+
+.admin-alerta p {
+  color: #fee2e2;
+}
