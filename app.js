@@ -77,6 +77,12 @@ const especialMejorJugador = document.getElementById("especialMejorJugador");
 const estadoEspeciales = document.getElementById("estadoEspeciales");
 const btnRecalcularPuntajes = document.getElementById("btnRecalcularPuntajes");
 
+const btnTabAdmin = document.getElementById("btnTabAdmin");
+const adminContainer = document.getElementById("adminContainer");
+const btnActualizarAdmin = document.getElementById("btnActualizarAdmin");
+
+
+
 // =====================================================
 // RESULTADOS OFICIALES Y PUNTUACIÓN
 // =====================================================
@@ -792,6 +798,22 @@ let prediccionesUsuario = {};
 let especialesUsuario = {};
 
 // =====================================================
+// ADMINISTRACIÓN
+// =====================================================
+
+const ADMIN_EMAILS = [
+  "acalleb@ups.edu.ec"
+];
+
+function esUsuarioAdministrador(user) {
+  if (!user || !user.email) {
+    return false;
+  }
+
+  return ADMIN_EMAILS.includes(user.email.toLowerCase());
+}
+
+// =====================================================
 // BLOQUEO TEMPORAL DEL BOTÓN DE GUARDADO
 // =====================================================
 // =====================================================
@@ -1225,6 +1247,9 @@ btnVerificarEstado.addEventListener("click", async () => {
 });
 
 btnGuardarTodo.addEventListener("click", guardarTodosLosPronosticos);
+if (btnActualizarAdmin) {
+  btnActualizarAdmin.addEventListener("click", cargarPanelAdministracion);
+}
 deshabilitarBotonGuardadoTemporalmente();
 
 if (btnRecalcularPuntajes) {
@@ -1255,6 +1280,216 @@ onAuthStateChanged(auth, async (user) => {
   }
 });
 
+async function cargarPanelAdministracion() {
+  if (!adminContainer) {
+    return;
+  }
+
+  if (!esUsuarioAdministrador(usuarioActual)) {
+    adminContainer.innerHTML = `
+      <div class="admin-alerta">
+        <h3>Acceso restringido</h3>
+        <p>Este panel solo está disponible para el usuario administrador.</p>
+      </div>
+    `;
+    return;
+  }
+
+  adminContainer.innerHTML = `
+    <p class="ranking-cargando">Cargando pronósticos de participantes...</p>
+  `;
+
+  try {
+    const usuariosRef = collection(db, "prediccionesUsuarios");
+    const usuariosSnap = await getDocs(usuariosRef);
+
+    if (usuariosSnap.empty) {
+      adminContainer.innerHTML = `
+        <div class="ranking-vacio">
+          <h3>No hay pronósticos guardados</h3>
+          <p>Todavía ningún participante ha guardado sus datos.</p>
+        </div>
+      `;
+      return;
+    }
+
+    const participantes = [];
+
+    usuariosSnap.forEach((docSnap) => {
+      const data = docSnap.data();
+
+      const partidos = data.partidos || {};
+      const especiales = data.especiales || {};
+
+      participantes.push({
+        id: docSnap.id,
+        nombre: data.userName || "Participante sin nombre",
+        email: data.userEmail || "",
+        totalPartidos: Object.keys(partidos).length,
+        puntosTotales: data.puntosTotales || 0,
+        goleador: especiales.goleador || "",
+        mejorJugador: especiales.mejorJugador || "",
+        fechaActualizacion: data.fechaActualizacion || null,
+        partidos,
+        especiales
+      });
+    });
+
+    participantes.sort((a, b) =>
+      a.nombre.localeCompare(b.nombre)
+    );
+
+    adminContainer.innerHTML = `
+      <div class="admin-resumen">
+        <h3>Pronósticos registrados: ${participantes.length}</h3>
+        <p>
+          Esta tabla muestra los datos guardados por cada participante en Firebase.
+        </p>
+      </div>
+
+      <div class="admin-tabla-wrapper">
+        <table class="admin-tabla">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Participante</th>
+              <th>Correo</th>
+              <th>Partidos llenados</th>
+              <th>Goleador</th>
+              <th>Mejor jugador</th>
+              <th>Puntos actuales</th>
+              <th>Detalle</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            ${participantes
+              .map((participante, index) => `
+                <tr>
+                  <td>${index + 1}</td>
+                  <td class="admin-nombre">${participante.nombre}</td>
+                  <td>${participante.email}</td>
+                  <td>${participante.totalPartidos}</td>
+                  <td>${participante.goleador || "—"}</td>
+                  <td>${participante.mejorJugador || "—"}</td>
+                  <td>${participante.puntosTotales}</td>
+                  <td>
+                    <button 
+                      class="admin-btn-detalle" 
+                      type="button"
+                      data-admin-participante="${participante.id}"
+                    >
+                      Ver
+                    </button>
+                  </td>
+                </tr>
+              `)
+              .join("")}
+          </tbody>
+        </table>
+      </div>
+
+      <div id="adminDetalleContainer" class="admin-detalle-container">
+        <p>Selecciona un participante para ver sus pronósticos.</p>
+      </div>
+    `;
+
+    document.querySelectorAll("[data-admin-participante]").forEach((boton) => {
+      boton.addEventListener("click", () => {
+        const participanteId = boton.dataset.adminParticipante;
+
+        const participante = participantes.find(
+          (item) => item.id === participanteId
+        );
+
+        mostrarDetalleParticipanteAdmin(participante);
+      });
+    });
+
+  } catch (error) {
+    console.error("Error cargando panel de administración:", error);
+
+    adminContainer.innerHTML = `
+      <div class="ranking-vacio">
+        <h3>No se pudo cargar el panel</h3>
+        <p>Revisa la conexión o los permisos de Firebase.</p>
+      </div>
+    `;
+  }
+}
+
+function mostrarDetalleParticipanteAdmin(participante) {
+  const detalleContainer = document.getElementById("adminDetalleContainer");
+
+  if (!detalleContainer || !participante) {
+    return;
+  }
+
+  const partidos = Object.values(participante.partidos || {})
+    .sort((a, b) => Number(a.numero) - Number(b.numero));
+
+  if (partidos.length === 0) {
+    detalleContainer.innerHTML = `
+      <div class="admin-detalle">
+        <h3>${participante.nombre}</h3>
+        <p>Este participante todavía no tiene partidos guardados.</p>
+      </div>
+    `;
+    return;
+  }
+
+  detalleContainer.innerHTML = `
+    <div class="admin-detalle">
+      <h3>${participante.nombre}</h3>
+
+      <p>
+        <strong>Correo:</strong> ${participante.email}
+      </p>
+
+      <p>
+        <strong>Goleador:</strong> ${participante.goleador || "—"} ·
+        <strong>Mejor jugador:</strong> ${participante.mejorJugador || "—"}
+      </p>
+
+      <div class="admin-tabla-wrapper">
+        <table class="admin-tabla admin-tabla-detalle">
+          <thead>
+            <tr>
+              <th>Partido</th>
+              <th>Fase</th>
+              <th>Local</th>
+              <th>Marcador</th>
+              <th>Visitante</th>
+              <th>Avanza</th>
+              <th>Puntos</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            ${partidos
+              .map((partido) => `
+                <tr>
+                  <td>${partido.numero || "—"}</td>
+                  <td>${traducirFase(partido.fase || "")}</td>
+                  <td>${partido.equipoLocalMostrado || partido.equipoLocal || "—"}</td>
+                  <td>
+                    ${partido.golesLocal ?? "—"}
+                    -
+                    ${partido.golesVisitante ?? "—"}
+                  </td>
+                  <td>${partido.equipoVisitanteMostrado || partido.equipoVisitante || "—"}</td>
+                  <td>${partido.equipoAvanza || "—"}</td>
+                  <td>${partido.puntos ?? 0}</td>
+                </tr>
+              `)
+              .join("")}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+}
+
 async function cargarPartidos() {
   try {
     const rutaJSON = "./data/partidos.json";
@@ -1281,6 +1516,9 @@ async function cargarPartidos() {
 // Temporalmente deshabilitado junto con eliminación directa.
 // renderizarPronosticosEspeciales();
 await cargarListaParticipantes();
+    if (esUsuarioAdministrador(usuarioActual)) {
+  await cargarPanelAdministracion();
+}
 //  await cargarRanking();
 
   } catch (error) {
@@ -1313,11 +1551,23 @@ function actualizarPanelUsuario(user) {
       emailVerificationPanel.classList.remove("hidden");
     }
 
+    if (btnTabAdmin) {
+      if (esUsuarioAdministrador(user)) {
+        btnTabAdmin.classList.remove("hidden");
+      } else {
+        btnTabAdmin.classList.add("hidden");
+      }
+    }
+
   } else {
     authLoggedOut.classList.remove("hidden");
     authLoggedIn.classList.add("hidden");
     emailVerificationPanel.classList.add("hidden");
     userInfo.textContent = "No has iniciado sesión.";
+
+    if (btnTabAdmin) {
+      btnTabAdmin.classList.add("hidden");
+    }
   }
 }
 
