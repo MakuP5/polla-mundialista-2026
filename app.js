@@ -803,6 +803,7 @@ let especialesUsuario = {};
 
 const ADMIN_EMAILS = [
   "acalleb@ups.edu.ec"
+  "dalvarezp@ups.edu.ec"
 ];
 
 function esUsuarioAdministrador(user) {
