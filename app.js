@@ -802,7 +802,7 @@ let especialesUsuario = {};
 // =====================================================
 
 const ADMIN_EMAILS = [
-  "acalleb@ups.edu.ec"
+  "acalleb@ups.edu.ec",
   "dalvarezp@ups.edu.ec"
 ];
 
