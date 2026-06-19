@@ -134,10 +134,138 @@ const resultadosOficiales = {
   "partido-004": {
     golesLocal: 4,
     golesVisitante: 1
-  }
+  },
+
+  "partido-005": {
+    golesLocal: 0,
+    golesVisitante: 1
+  },
+
+  "partido-006": {
+    golesLocal: 2,
+    golesVisitante: 0
+  },
+
+  "partido-007": {
+    golesLocal: 1,
+    golesVisitante: 1
+  },
+
+  "partido-008": {
+    golesLocal: 1,
+    golesVisitante: 1
+  },
+
+  "partido-009": {
+    golesLocal: 1,
+    golesVisitante: 0
+  },
+
+  "partido-010": {
+    golesLocal: 7,
+    golesVisitante: 1
+  },
+
+  "partido-011": {
+    golesLocal: 2,
+    golesVisitante: 2
+  },
+
+  "partido-012": {
+    golesLocal: 5,
+    golesVisitante: 1
+  },
+
+  "partido-013": {
+    golesLocal: 1,
+    golesVisitante: 1
+  },
+
+  "partido-014": {
+    golesLocal: 0,
+    golesVisitante: 0
+  },
+
+  "partido-015": {
+    golesLocal: 2,
+    golesVisitante: 2
+  },
+
+  "partido-016": {
+    golesLocal: 1,
+    golesVisitante: 1
+  },
+
+  "partido-017": {
+    golesLocal: 3,
+    golesVisitante: 1
+  },
+
+  "partido-018": {
+    golesLocal: 1,
+    golesVisitante: 4
+  },
+
+  "partido-019": {
+    golesLocal: 3,
+    golesVisitante: 0
+  },
+
+  "partido-020": {
+    golesLocal: 3,
+    golesVisitante: 1
+  },
+
+  "partido-021": {
+    golesLocal: 1,
+    golesVisitante: 0
+  },
+
+  "partido-022": {
+    golesLocal: 4,
+    golesVisitante: 2
+  },
+
+  "partido-023": {
+    golesLocal: 1,
+    golesVisitante: 1
+  },
+
+  "partido-024": {
+    golesLocal: 1,
+    golesVisitante: 3
+  },
+
+  "partido-025": {
+    golesLocal: 1,
+    golesVisitante: 1
+  },
+
+  "partido-026": {
+    golesLocal: 4,
+    golesVisitante: 1
+  },
+
+  "partido-027": {
+    golesLocal: 6,
+    golesVisitante: 0
+  },
+
+  "partido-028": {
+    golesLocal: 1,
+    golesVisitante: 0
+  },
+
+  "partido-032": {
+    golesLocal: 2,
+    golesVisitante: 0
+  },
 
   // Agregar nuevos resultados reales aquí.
 };
+
+const RESULTADOS_OFICIALES_ULTIMA_ACTUALIZACION =
+  "19 de junio de 2026, 16:04 (UTC-5)";
 // =====================================================
 // RESULTADOS OFICIALES Y PUNTUACIÓN
 // =====================================================
@@ -376,64 +504,81 @@ function construirPrediccionesDesdeResultadosOficiales() {
 }
 
 function calcularPuntosClasificacionGrupos(prediccionesUsuarioActual) {
-    const prediccionesOficiales =
-      construirPrediccionesDesdeResultadosOficiales();
-  
-    const posicionesUsuario = calcularTablasDeGrupos(
-      partidosGlobales,
-      prediccionesUsuarioActual
-    );
-  
-    const posicionesOficiales = calcularTablasDeGrupos(
-      partidosGlobales,
-      prediccionesOficiales
-    );
-  
-    let puntosClasificacion = 0;
-    let aciertosClasificados = 0;
-  
-    Object.keys(posicionesOficiales).forEach((grupo) => {
-      const tablaOficial = posicionesOficiales[grupo];
-      const tablaUsuario = posicionesUsuario[grupo];
-  
-      if (!tablaOficial || !tablaUsuario) {
-        return;
-      }
-  
-      /*
-        Solo puntuamos el grupo si ya existen al menos dos posiciones oficiales.
-        Para usarlo al final de fase de grupos, esto estará completo.
-      */
-      const clasificadosOficiales = tablaOficial.slice(0, 2);
-      const clasificadosUsuario = tablaUsuario.slice(0, 2);
-  
-      clasificadosUsuario.forEach((equipoUsuario, indiceUsuario) => {
-        const indiceOficial = clasificadosOficiales.findIndex(
-          (equipoOficial) =>
-            normalizarTextoPuntuacion(equipoOficial.nombre) ===
-            normalizarTextoPuntuacion(equipoUsuario.nombre)
-        );
-  
-        if (indiceOficial === -1) {
-          return;
-        }
-  
-        // 1 punto por clasificado correcto.
-        puntosClasificacion += PUNTOS_CLASIFICADO;
-        aciertosClasificados += 1;
-  
-        // +1 si además acertó si era primero o segundo.
-        if (indiceOficial === indiceUsuario) {
-          puntosClasificacion += PUNTOS_POSICION_CLASIFICADO;
-        }
-      });
-    });
-  
+  if (!estanTodosResultadosGruposCargados()) {
     return {
-      puntosClasificacion,
-      aciertosClasificados
+      puntosClasificacion: 0,
+      aciertosClasificados: 0
     };
   }
+
+  const prediccionesOficiales =
+    construirPrediccionesDesdeResultadosOficiales();
+  
+  const posicionesUsuario = calcularTablasDeGrupos(
+    partidosGlobales,
+    prediccionesUsuarioActual
+  );
+
+  const posicionesOficiales = calcularTablasDeGrupos(
+    partidosGlobales,
+    prediccionesOficiales
+  );
+
+  let puntosClasificacion = 0;
+  let aciertosClasificados = 0;
+
+  Object.keys(posicionesOficiales).forEach((grupo) => {
+    const tablaOficial = posicionesOficiales[grupo];
+    const tablaUsuario = posicionesUsuario[grupo];
+
+    if (!tablaOficial || !tablaUsuario) {
+      return;
+    }
+
+    const clasificadosOficiales = tablaOficial.slice(0, 2);
+    const clasificadosUsuario = tablaUsuario.slice(0, 2);
+
+    clasificadosUsuario.forEach((equipoUsuario, indiceUsuario) => {
+      const indiceOficial = clasificadosOficiales.findIndex(
+        (equipoOficial) =>
+          normalizarTextoPuntuacion(equipoOficial.nombre) ===
+          normalizarTextoPuntuacion(equipoUsuario.nombre)
+      );
+
+      if (indiceOficial === -1) {
+        return;
+      }
+
+      // 1 punto por clasificado correcto.
+      puntosClasificacion += PUNTOS_CLASIFICADO;
+      aciertosClasificados += 1;
+
+      // +1 si además acertó si era primero o segundo.
+      if (indiceOficial === indiceUsuario) {
+        puntosClasificacion += PUNTOS_POSICION_CLASIFICADO;
+      }
+    });
+  });
+
+  return {
+    puntosClasificacion,
+    aciertosClasificados
+  };
+}
+
+function estanTodosResultadosGruposCargados() {
+  return partidosGlobales
+    .filter(esFaseDeGrupos)
+    .every((partido) => {
+      const resultado = resultadosOficiales[partido.id];
+
+      return (
+        resultado &&
+        resultado.golesLocal !== undefined &&
+        resultado.golesVisitante !== undefined
+      );
+    });
+}
 
 function calcularPuntosEliminacion(prediccion, resultadoReal, partido) {
     if (!prediccion || !resultadoReal || !partido) {
@@ -1327,6 +1472,8 @@ async function cargarPanelAdministracion() {
         nombre: data.userName || "Participante sin nombre",
         email: data.userEmail || "",
         totalPartidos: Object.keys(partidos).length,
+        totalResultadosOficiales:
+          contarPartidosConResultadoOficial(partidos),
         puntosTotales: data.puntosTotales || 0,
         goleador: especiales.goleador || "",
         mejorJugador: especiales.mejorJugador || "",
@@ -1346,6 +1493,10 @@ async function cargarPanelAdministracion() {
         <p>
           Esta tabla muestra los datos guardados por cada participante en Firebase.
         </p>
+        <p>
+          <strong>Resultados oficiales actualizados:</strong>
+          ${RESULTADOS_OFICIALES_ULTIMA_ACTUALIZACION}
+        </p>
       </div>
 
       <div class="admin-tabla-wrapper">
@@ -1356,6 +1507,7 @@ async function cargarPanelAdministracion() {
               <th>Participante</th>
               <th>Correo</th>
               <th>Partidos llenados</th>
+              <th>Resultados oficiales</th>
               <th>Goleador</th>
               <th>Mejor jugador</th>
               <th>Puntos actuales</th>
@@ -1371,6 +1523,11 @@ async function cargarPanelAdministracion() {
                   <td class="admin-nombre">${participante.nombre}</td>
                   <td>${participante.email}</td>
                   <td>${participante.totalPartidos}</td>
+                  <td>
+                    ${participante.totalResultadosOficiales}
+                    /
+                    ${participante.totalPartidos}
+                  </td>
                   <td>${participante.goleador || "—"}</td>
                   <td>${participante.mejorJugador || "—"}</td>
                   <td>${participante.puntosTotales}</td>
@@ -1461,6 +1618,7 @@ function mostrarDetalleParticipanteAdmin(participante) {
               <th>Local</th>
               <th>Marcador</th>
               <th>Visitante</th>
+              <th>Resultado oficial</th>
               <th>Avanza</th>
               <th>Puntos</th>
             </tr>
@@ -1479,6 +1637,7 @@ function mostrarDetalleParticipanteAdmin(participante) {
                     ${partido.golesVisitante ?? "—"}
                   </td>
                   <td>${partido.equipoVisitanteMostrado || partido.equipoVisitante || "—"}</td>
+                  <td>${formatearResultadoOficialAdmin(partido)}</td>
                   <td>${partido.equipoAvanza || "—"}</td>
                   <td>${partido.puntos ?? 0}</td>
                 </tr>
@@ -1489,6 +1648,56 @@ function mostrarDetalleParticipanteAdmin(participante) {
       </div>
     </div>
   `;
+}
+
+function contarPartidosConResultadoOficial(partidos) {
+  return Object.entries(partidos || {}).filter(
+    ([partidoId, partido]) => obtenerResultadoOficialAdmin(partidoId, partido)
+  ).length;
+}
+
+function obtenerResultadoOficialAdmin(partidoId, partido) {
+  const id = partido?.partidoId || partidoId;
+
+  if (id && resultadosOficiales[id]) {
+    return resultadosOficiales[id];
+  }
+
+  if (
+    partido?.resultadoRealLocal !== undefined &&
+    partido?.resultadoRealVisitante !== undefined
+  ) {
+    return {
+      golesLocal: partido.resultadoRealLocal,
+      golesVisitante: partido.resultadoRealVisitante,
+      equipoAvanza: partido.equipoAvanzaOficial || null
+    };
+  }
+
+  return null;
+}
+
+function formatearResultadoOficialAdmin(partido) {
+  const resultado = obtenerResultadoOficialAdmin(
+    partido?.partidoId,
+    partido
+  );
+
+  if (!resultado) {
+    return "Pendiente";
+  }
+
+  const marcador = `
+    ${resultado.golesLocal ?? "—"}
+    -
+    ${resultado.golesVisitante ?? "—"}
+  `;
+
+  if (resultado.equipoAvanza) {
+    return `${marcador}<br><small>Avanza: ${resultado.equipoAvanza}</small>`;
+  }
+
+  return marcador;
 }
 
 async function cargarPartidos() {
