@@ -314,8 +314,54 @@ function calcularPuntosFaseGrupos(prediccion, resultadoReal) {
     };
   }
 
-  function construirPrediccionesDesdeResultadosOficiales() {
-    const prediccionesOficiales = {};
+  const predLocal = Number(prediccion.golesLocal);
+  const predVisitante = Number(prediccion.golesVisitante);
+
+  const realLocal = Number(resultadoReal.golesLocal);
+  const realVisitante = Number(resultadoReal.golesVisitante);
+
+  const marcadorExacto =
+    predLocal === realLocal &&
+    predVisitante === realVisitante;
+
+  if (marcadorExacto) {
+    return {
+      puntos: PUNTOS_MARCADOR_EXACTO,
+      aciertoExacto: true,
+      aciertoResultado: true,
+      estadoPuntuacion: "puntuado"
+    };
+  }
+
+  const resultadoPronosticado = obtenerTipoResultado(
+    predLocal,
+    predVisitante
+  );
+
+  const resultadoOficial = obtenerTipoResultado(
+    realLocal,
+    realVisitante
+  );
+
+  if (resultadoPronosticado === resultadoOficial) {
+    return {
+      puntos: PUNTOS_RESULTADO_GRUPOS,
+      aciertoExacto: false,
+      aciertoResultado: true,
+      estadoPuntuacion: "puntuado"
+    };
+  }
+
+  return {
+    puntos: 0,
+    aciertoExacto: false,
+    aciertoResultado: false,
+    estadoPuntuacion: "puntuado"
+  };
+}
+
+function construirPrediccionesDesdeResultadosOficiales() {
+  const prediccionesOficiales = {};
   
     Object.entries(resultadosOficiales).forEach(
       ([partidoId, resultado]) => {
@@ -326,10 +372,10 @@ function calcularPuntosFaseGrupos(prediccion, resultadoReal) {
       }
     );
   
-    return prediccionesOficiales;
-  }
-  
-  function calcularPuntosClasificacionGrupos(prediccionesUsuarioActual) {
+  return prediccionesOficiales;
+}
+
+function calcularPuntosClasificacionGrupos(prediccionesUsuarioActual) {
     const prediccionesOficiales =
       construirPrediccionesDesdeResultadosOficiales();
   
@@ -389,7 +435,7 @@ function calcularPuntosFaseGrupos(prediccion, resultadoReal) {
     };
   }
 
-  function calcularPuntosEliminacion(prediccion, resultadoReal, partido) {
+function calcularPuntosEliminacion(prediccion, resultadoReal, partido) {
     if (!prediccion || !resultadoReal || !partido) {
       return {
         puntos: 0,
@@ -425,7 +471,7 @@ function calcularPuntosFaseGrupos(prediccion, resultadoReal) {
     };
   }
 
-  function calcularPuntosFinal(prediccionFinal, resultadoFinal) {
+function calcularPuntosFinal(prediccionFinal, resultadoFinal) {
     let puntos = 0;
     let acertoCampeon = false;
     let acertoSubcampeon = false;
@@ -501,10 +547,10 @@ function calcularPuntosFaseGrupos(prediccion, resultadoReal) {
 //___________________________________________________________
 //___________________________________________________________
 
-  const resultadosEspeciales = {
+const resultadosEspeciales = {
     goleador: "",
     mejorJugador: ""
-  };
+};
 
   //___________________________________________________________
 //___________________________________________________________
@@ -725,52 +771,6 @@ async function recalcularPuntajesUsuarios() {
     console.error("Error recalculando puntajes:", error);
     alert("No se pudo recalcular la puntuación.");
   }
-}
-
-  const predLocal = Number(prediccion.golesLocal);
-  const predVisitante = Number(prediccion.golesVisitante);
-
-  const realLocal = Number(resultadoReal.golesLocal);
-  const realVisitante = Number(resultadoReal.golesVisitante);
-
-  const marcadorExacto =
-    predLocal === realLocal &&
-    predVisitante === realVisitante;
-
-  if (marcadorExacto) {
-    return {
-      puntos: PUNTOS_MARCADOR_EXACTO,
-      aciertoExacto: true,
-      aciertoResultado: true,
-      estadoPuntuacion: "puntuado"
-    };
-  }
-
-  const resultadoPronosticado = obtenerTipoResultado(
-    predLocal,
-    predVisitante
-  );
-
-  const resultadoOficial = obtenerTipoResultado(
-    realLocal,
-    realVisitante
-  );
-
-  if (resultadoPronosticado === resultadoOficial) {
-    return {
-      puntos: PUNTOS_RESULTADO_GRUPOS,
-      aciertoExacto: false,
-      aciertoResultado: true,
-      estadoPuntuacion: "puntuado"
-    };
-  }
-
-  return {
-    puntos: 0,
-    aciertoExacto: false,
-    aciertoResultado: false,
-    estadoPuntuacion: "puntuado"
-  };
 }
 
 botonesTabs.forEach((boton) => {
@@ -3013,4 +3013,3 @@ function validarPronosticosEspeciales(especiales) {
   return true;
 }
 //cargarPartidos();
-
