@@ -1474,7 +1474,7 @@ async function cargarPanelAdministracion() {
         totalPartidos: Object.keys(partidos).length,
         totalResultadosOficiales:
           contarPartidosConResultadoOficial(partidos),
-        puntosTotales: data.puntosTotales || 0,
+        puntosTotales: Number(data.puntosTotales) || 0,
         goleador: especiales.goleador || "",
         mejorJugador: especiales.mejorJugador || "",
         fechaActualizacion: data.fechaActualizacion || null,
@@ -1720,16 +1720,15 @@ async function cargarPartidos() {
     const partidosEliminacion = partidosCalculados.filter((partido) => !esFaseDeGrupos(partido));
 
     renderizarFaseGrupos(partidosGrupos);
-// Temporalmente deshabilitado hasta finalizar la fase de grupos.
-// renderizarBracketEliminacion(partidosEliminacion);
+    // Temporalmente deshabilitado hasta finalizar la fase de grupos.
+    // renderizarBracketEliminacion(partidosEliminacion);
 
-// Temporalmente deshabilitado junto con eliminación directa.
-// renderizarPronosticosEspeciales();
-await cargarListaParticipantes();
+    // Temporalmente deshabilitado junto con eliminación directa.
+    // renderizarPronosticosEspeciales();
+    await cargarRanking();
     if (esUsuarioAdministrador(usuarioActual)) {
-  await cargarPanelAdministracion();
-}
-//  await cargarRanking();
+      await cargarPanelAdministracion();
+    }
 
   } catch (error) {
     console.error("Error cargando partidos:", error);
@@ -2158,7 +2157,7 @@ async function cargarRanking() {
         id: docSnap.id,
         nombre: data.userName || data.userEmail || "Participante",
         email: data.userEmail || "",
-        puntosTotales: data.puntosTotales || 0,
+        puntosTotales: Number(data.puntosTotales) || 0,
         aciertosExactos: data.aciertosExactos || 0,
         aciertosResultado: data.aciertosResultado || 0,
         aciertosClasificados: data.aciertosClasificados || 0,
