@@ -2201,6 +2201,10 @@ async function cargarRanking() {
         <p>
           El ranking se ordena por puntaje total y aplica los criterios de desempate del reglamento.
         </p>
+        <p>
+          <strong>Datos actualizados hasta:</strong>
+          ${RESULTADOS_OFICIALES_ULTIMA_ACTUALIZACION}
+        </p>
       </div>
 
       <div class="ranking-tabla-wrapper">
