@@ -344,7 +344,7 @@ const resultadosOficiales = {
 };
 
 const RESULTADOS_OFICIALES_ULTIMA_ACTUALIZACION =
-  "19 de junio de 2026, 16:04 (UTC-5)";
+  "24 de junio de 2026, 11:04 (UTC-5)";
 // =====================================================
 // RESULTADOS OFICIALES Y PUNTUACIÓN
 // =====================================================
