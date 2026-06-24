@@ -261,6 +261,72 @@ const resultadosOficiales = {
     golesVisitante: 0
   },
 
+  "partido-033": {
+    golesLocal: 2,
+    golesVisitante: 1
+  },
+  "partido-034": {
+    golesLocal: 0,
+    golesVisitante: 0
+  },
+  "partido-035": {
+    golesLocal: 5,
+    golesVisitante: 1
+  },
+  "partido-036": {
+    golesLocal: 0,
+    golesVisitante: 4
+  },
+  "partido-037": {
+    golesLocal: 2,
+    golesVisitante: 2
+  },
+  "partido-038": {
+    golesLocal: 4,
+    golesVisitante: 0
+  },
+  "partido-039": {
+    golesLocal: 0,
+    golesVisitante: 0
+  },
+  "partido-040": {
+    golesLocal: 1,
+    golesVisitante: 3
+  },
+  "partido-041": {
+    golesLocal: 3,
+    golesVisitante: 2
+  },
+  "partido-042": {
+    golesLocal: 3,
+    golesVisitante: 0
+  },
+  "partido-043": {
+    golesLocal: 2,
+    golesVisitante: 0
+  },
+  "partido-044": {
+    golesLocal: 1,
+    golesVisitante: 2
+  },
+  "partido-045": {
+    golesLocal: 0,
+    golesVisitante: 0
+  },
+  "partido-046": {
+    golesLocal: 0,
+    golesVisitante: 1
+  },
+  "partido-047": {
+    golesLocal: 5,
+    golesVisitante: 0
+  },
+  "partido-048": {
+    golesLocal: 1,
+    golesVisitante: 0
+  },
+
+  
   // Agregar nuevos resultados reales aquí.
 };
 
