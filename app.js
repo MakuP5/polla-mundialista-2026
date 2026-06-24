@@ -256,6 +256,19 @@ const resultadosOficiales = {
     golesVisitante: 0
   },
 
+  "partido-029": {
+    golesLocal: 3,
+    golesVisitante: 0
+  },
+  "partido-030": {
+    golesLocal: 0,
+    golesVisitante: 1
+  },
+  "partido-031": {
+    golesLocal: 0,
+    golesVisitante: 1
+  },
+  
   "partido-032": {
     golesLocal: 2,
     golesVisitante: 0
