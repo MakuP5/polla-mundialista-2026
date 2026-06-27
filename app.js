@@ -81,6 +81,23 @@ const btnTabAdmin = document.getElementById("btnTabAdmin");
 const adminContainer = document.getElementById("adminContainer");
 const btnActualizarAdmin = document.getElementById("btnActualizarAdmin");
 
+function mostrarErrorFirebase(error, mensajeFallback = "No se pudo completar la operación.") {
+  const esPermiso = error?.code === "permission-denied" || error?.message?.includes("permission") || error?.message?.includes("PERMISSION_DENIED");
+
+  if (esPermiso) {
+    console.warn("Firestore bloqueó la operación por permisos. Se continuará con el modo de solo vista.", error);
+
+    if (estadoGuardadoGlobal) {
+      estadoGuardadoGlobal.textContent = "La base de datos está bloqueada por reglas de Firestore. Puedes seguir navegando, pero los datos no se sincronizarán hasta publicar las reglas correctas.";
+    }
+
+    return true;
+  }
+
+  console.error(mensajeFallback, error);
+  return false;
+}
+
 
 
 // =====================================================
@@ -345,6 +362,52 @@ const resultadosOficiales = {
 
 const RESULTADOS_OFICIALES_ULTIMA_ACTUALIZACION =
   "24 de junio de 2026, 11:04 (UTC-5)";
+
+function formatearFechaHoraActualizacion(fecha = new Date()) {
+  return new Intl.DateTimeFormat("es-EC", {
+    dateStyle: "long",
+    timeStyle: "short",
+    timeZone: "America/Guayaquil"
+  }).format(fecha);
+}
+
+function obtenerFechaRankingParticipante(data) {
+  if (data.fechaRankingActualizacionTexto) {
+    return data.fechaRankingActualizacionTexto;
+  }
+
+  const fecha =
+    data.fechaRankingActualizacion ||
+    data.fechaPuntuacion ||
+    data.fechaActualizacion;
+
+  if (fecha?.toDate) {
+    return formatearFechaHoraActualizacion(fecha.toDate());
+  }
+
+  if (fecha instanceof Date) {
+    return formatearFechaHoraActualizacion(fecha);
+  }
+
+  return "";
+}
+
+function obtenerMillisFechaRankingParticipante(data) {
+  const fecha =
+    data.fechaRankingActualizacion ||
+    data.fechaPuntuacion ||
+    data.fechaActualizacion;
+
+  if (fecha?.toDate) {
+    return fecha.toDate().getTime();
+  }
+
+  if (fecha instanceof Date) {
+    return fecha.getTime();
+  }
+
+  return 0;
+}
 // =====================================================
 // RESULTADOS OFICIALES Y PUNTUACIÓN
 // =====================================================
@@ -826,6 +889,8 @@ async function recalcularPuntajesUsuarios() {
     }
 
     let usuariosProcesados = 0;
+    const fechaRankingActualizacionTexto =
+      formatearFechaHoraActualizacion(new Date());
 
     for (const usuarioDoc of usuariosSnap.docs) {
       const data = usuarioDoc.data();
@@ -976,7 +1041,9 @@ async function recalcularPuntajesUsuarios() {
           acertoSubcampeon,
           acertoGoleador,
 
-          fechaPuntuacion: serverTimestamp()
+          fechaPuntuacion: serverTimestamp(),
+          fechaRankingActualizacion: serverTimestamp(),
+          fechaRankingActualizacionTexto
         },
         {
           merge: true
@@ -993,6 +1060,18 @@ async function recalcularPuntajesUsuarios() {
 
   } catch (error) {
     console.error("Error recalculando puntajes:", error);
+
+    if (
+      error?.code === "permission-denied" ||
+      error?.message?.includes("permission") ||
+      error?.message?.includes("PERMISSION_DENIED")
+    ) {
+      alert(
+        "No se pudo recalcular la puntuación porque Firestore bloqueó la escritura. Publica las reglas actualizadas y vuelve a intentarlo."
+      );
+      return;
+    }
+
     alert("No se pudo recalcular la puntuación.");
   }
 }
@@ -1054,7 +1133,7 @@ function esUsuarioAdministrador(user) {
 // BLOQUEO TEMPORAL DEL BOTÓN DE GUARDADO
 // =====================================================
 
-const GUARDADO_TEMPORALMENTE_CERRADO = true;
+const GUARDADO_TEMPORALMENTE_CERRADO = false;
 
 // =====================================================
 // BLOQUEO TEMPORAL DEL BOTÓN DE GUARDADO
@@ -1298,6 +1377,48 @@ btnRecalcularBracket.addEventListener("click", async () => {
 });
 
 */
+if (btnRecalcularBracket) {
+  btnRecalcularBracket.addEventListener("click", () => {
+    const pronosticosGrupos = obtenerPronosticosGruposGuardados();
+
+    if (Object.keys(pronosticosGrupos).length < 72) {
+      alert(
+        "Para recalcular las llaves necesitas tener guardados los 72 pronósticos de fase de grupos."
+      );
+      return;
+    }
+
+    const pronosticosEliminacion = recolectarPronosticosPartidos();
+
+    if (!pronosticosEliminacion) {
+      return;
+    }
+
+    const partidosActualizados = {
+      ...prediccionesUsuario,
+      ...pronosticosGrupos,
+      ...pronosticosEliminacion
+    };
+
+    prediccionesUsuario = partidosActualizados;
+
+    const partidosCalculados = calcularPartidosConPronosticos(
+      partidosGlobales,
+      prediccionesUsuario
+    );
+
+    const partidosEliminacion = partidosCalculados.filter(
+      (partido) => !esFaseDeGrupos(partido)
+    );
+
+    renderizarBracketEliminacion(partidosEliminacion);
+    renderizarPronosticosEspeciales();
+
+    estadoGuardadoGlobal.textContent =
+      "Llaves recalculadas con tus pronósticos actuales. Revisa las fases siguientes y guarda eliminación directa.";
+  });
+}
+
 btnRegistroEmail.addEventListener("click", async () => {
   const nombre = nombreRegistro.value.trim();
   const email = emailRegistro.value.trim().toLowerCase();
@@ -1482,26 +1603,42 @@ if (btnRecalcularPuntajes) {
 }
 
 onAuthStateChanged(auth, async (user) => {
-  if (user) {
-    await user.reload();
+  try {
+    if (user) {
+      await user.reload();
 
-    usuarioActual = auth.currentUser;
+      usuarioActual = auth.currentUser;
 
-    actualizarPanelUsuario(usuarioActual);
+      actualizarPanelUsuario(usuarioActual);
 
-    if (usuarioActual.emailVerified) {
-      await registrarUsuario(usuarioActual);
+      if (usuarioActual.emailVerified) {
+        try {
+          await registrarUsuario(usuarioActual);
+        } catch (error) {
+          mostrarErrorFirebase(error, "No se pudo registrar el usuario en Firestore.");
+        }
+      }
+
+      try {
+        await cargarPartidos();
+      } catch (error) {
+        mostrarErrorFirebase(error, "No se pudo cargar la información de partidos.");
+      }
+
+    } else {
+      usuarioActual = null;
+      prediccionesUsuario = {};
+
+      actualizarPanelUsuario(null);
+
+      try {
+        await cargarPartidos();
+      } catch (error) {
+        mostrarErrorFirebase(error, "No se pudo cargar la información de partidos.");
+      }
     }
-
-    await cargarPartidos();
-
-  } else {
-    usuarioActual = null;
-    prediccionesUsuario = {};
-
-    actualizarPanelUsuario(null);
-
-    await cargarPartidos();
+  } catch (error) {
+    mostrarErrorFirebase(error, "Error al inicializar la sesión de Firebase.");
   }
 });
 
@@ -1799,11 +1936,8 @@ async function cargarPartidos() {
     const partidosEliminacion = partidosCalculados.filter((partido) => !esFaseDeGrupos(partido));
 
     renderizarFaseGrupos(partidosGrupos);
-    // Temporalmente deshabilitado hasta finalizar la fase de grupos.
-    // renderizarBracketEliminacion(partidosEliminacion);
-
-    // Temporalmente deshabilitado junto con eliminación directa.
-    // renderizarPronosticosEspeciales();
+    renderizarBracketEliminacion(partidosEliminacion);
+    renderizarPronosticosEspeciales();
     await cargarRanking();
     if (esUsuarioAdministrador(usuarioActual)) {
       await cargarPanelAdministracion();
@@ -2033,6 +2167,7 @@ function traducirFase(fase) {
     "Quarterfinals": "Cuartos de final",
     "Semi-finals": "Semifinales",
     "Semifinals": "Semifinales",
+    "Third Place": "Partido por el tercer lugar",
     "Third-place match": "Partido por el tercer lugar",
     "Final": "Final"
   };
@@ -2206,6 +2341,18 @@ async function cargarRanking() {
     return;
   }
 
+  if (!usuarioActual) {
+    rankingContainer.innerHTML = `
+      <div class="ranking-vacio">
+        <h3>Ranking disponible al iniciar sesión</h3>
+        <p>
+          Ingresa con tu correo institucional UPS para consultar la tabla de posiciones.
+        </p>
+      </div>
+    `;
+    return;
+  }
+
   rankingContainer.innerHTML = `
     <p class="ranking-cargando">Cargando ranking...</p>
   `;
@@ -2228,9 +2375,21 @@ async function cargarRanking() {
     }
 
     const participantes = [];
+    let fechaRankingActualizacion = "";
+    let fechaRankingActualizacionMs = 0;
 
     rankingSnap.forEach((docSnap) => {
       const data = docSnap.data();
+      const fechaParticipante = obtenerFechaRankingParticipante(data);
+      const fechaParticipanteMs = obtenerMillisFechaRankingParticipante(data);
+
+      if (
+        fechaParticipante &&
+        fechaParticipanteMs >= fechaRankingActualizacionMs
+      ) {
+        fechaRankingActualizacion = fechaParticipante;
+        fechaRankingActualizacionMs = fechaParticipanteMs;
+      }
 
       participantes.push({
         id: docSnap.id,
@@ -2242,7 +2401,8 @@ async function cargarRanking() {
         aciertosClasificados: data.aciertosClasificados || 0,
         acertoCampeon: data.acertoCampeon || false,
         acertoSubcampeon: data.acertoSubcampeon || false,
-        acertoGoleador: data.acertoGoleador || false
+        acertoGoleador: data.acertoGoleador || false,
+        fechaRankingActualizacion: fechaParticipante
       });
     });
 
@@ -2282,7 +2442,7 @@ async function cargarRanking() {
         </p>
         <p>
           <strong>Datos actualizados hasta:</strong>
-          ${RESULTADOS_OFICIALES_ULTIMA_ACTUALIZACION}
+          ${fechaRankingActualizacion || RESULTADOS_OFICIALES_ULTIMA_ACTUALIZACION}
         </p>
       </div>
 
@@ -2389,6 +2549,10 @@ function recolectarPronosticosPartidos() {
   const errores = [];
 
   partidosGlobales.forEach((partido) => {
+    if (esFaseDeGrupos(partido)) {
+      return;
+    }
+
     const inputLocal = document.getElementById(`local-${partido.id}`);
     const inputVisitante = document.getElementById(`visitante-${partido.id}`);
     const selectAvanza = document.getElementById(`avanza-${partido.id}`);
@@ -2521,19 +2685,24 @@ async function guardarTodosLosPronosticos() {
     return;
   }
 
-  //const pronosticosPartidos = recolectarPronosticosPartidos();
-  const pronosticosPartidos = recolectarPronosticosFaseGrupos();
-  if (!pronosticosPartidos) {
-  return;
-}
-  //const especiales = recolectarPronosticosEspeciales();
-
-  /*if (!validarPronosticosEspeciales(especiales)) {
+  const pronosticosPantalla = recolectarPronosticosPartidos();
+  if (!pronosticosPantalla) {
     return;
-  }*/
+  }
 
-  if (Object.keys(pronosticosPartidos).length === 0) {
-    alert("Todavía no has ingresado ningún pronóstico.");
+  const pronosticosPartidos = {
+    ...prediccionesUsuario,
+    ...pronosticosPantalla
+  };
+
+  const especiales = recolectarPronosticosEspeciales();
+
+  if (!validarPronosticosEspeciales(especiales)) {
+    return;
+  }
+
+  if (Object.keys(pronosticosPantalla).length === 0) {
+    alert("Todavía no has ingresado ningún pronóstico de eliminación directa.");
     return;
   }
 
@@ -2546,7 +2715,7 @@ async function guardarTodosLosPronosticos() {
       userEmail: usuarioActual.email,
       emailVerificado: usuarioActual.emailVerified,
       partidos: pronosticosPartidos,
-      especiales: especialesUsuario || {},
+      especiales,
       puntosTotales: 0,
       aciertosExactos: 0,
       aciertosResultado: 0,
@@ -2558,7 +2727,7 @@ async function guardarTodosLosPronosticos() {
     }, { merge: true });
 
     prediccionesUsuario = pronosticosPartidos;
-    //especialesUsuario = especiales;
+    especialesUsuario = especiales;
     
 
     estadoGuardadoGlobal.textContent = "Pronósticos guardados correctamente.";
@@ -2669,11 +2838,23 @@ function crearTarjetaPartido(partido, modoBracket = false) {
   const visitante = obtenerSeleccion(partido.equipoVisitante);
 
   const prediccionGuardada = prediccionesUsuario[partido.id];
+  const prediccionCoincideConEquipos =
+    !prediccionGuardada ||
+    (
+      prediccionGuardada.equipoLocal === partido.equipoLocal &&
+      prediccionGuardada.equipoVisitante === partido.equipoVisitante
+    );
 
-  const valorLocal = prediccionGuardada ? prediccionGuardada.golesLocal : "";
-  const valorVisitante = prediccionGuardada ? prediccionGuardada.golesVisitante : "";
+  const valorLocal =
+    prediccionGuardada && prediccionCoincideConEquipos
+      ? prediccionGuardada.golesLocal
+      : "";
+  const valorVisitante =
+    prediccionGuardada && prediccionCoincideConEquipos
+      ? prediccionGuardada.golesVisitante
+      : "";
 
-  const estadoGuardado = prediccionGuardada
+  const estadoGuardado = prediccionGuardada && prediccionCoincideConEquipos
     ? `<span class="estado-guardado">Guardado</span>`
     : `<span class="estado-pendiente">Sin guardar</span>`;
 
@@ -2700,14 +2881,25 @@ function crearTarjetaPartido(partido, modoBracket = false) {
       </div>
     `;
 
-  const claseFinal = partido.numero === 104 ? "partido-final" : "";
+const claseFinal = partido.numero === 104 ? "partido-final" : "";
   const esEliminacion = !esFaseDeGrupos(partido);
-const equipoAvanzaGuardado = prediccionGuardada ? prediccionGuardada.equipoAvanza : "";
+  const camposBloqueados = !esEliminacion;
+  const atributoBloqueado = camposBloqueados ? "disabled" : "";
+const equipoAvanzaGuardado =
+  prediccionGuardada && prediccionCoincideConEquipos
+    ? prediccionGuardada.equipoAvanza
+    : "";
+const faseTraducidaTarjeta = traducirFase(partido.fase);
+const etiquetaSelectorGanador =
+  faseTraducidaTarjeta === "Final" ||
+  faseTraducidaTarjeta === "Partido por el tercer lugar"
+    ? "Ganador del partido"
+    : "Equipo que avanza";
 
 const selectorAvanza = esEliminacion
   ? `
     <div class="selector-avanza">
-      <label for="avanza-${partido.id}">Equipo que avanza</label>
+      <label for="avanza-${partido.id}">${etiquetaSelectorGanador}</label>
       <select id="avanza-${partido.id}">
         <option value="">Selecciona</option>
         <option value="${partido.equipoLocal}" ${equipoAvanzaGuardado === partido.equipoLocal ? "selected" : ""}>
@@ -2751,6 +2943,7 @@ return `
           id="local-${partido.id}" 
           placeholder="0"
           value="${valorLocal}"
+          ${atributoBloqueado}
         >
 
         <span>-</span>
@@ -2761,6 +2954,7 @@ return `
           id="visitante-${partido.id}" 
           placeholder="0"
           value="${valorVisitante}"
+          ${atributoBloqueado}
         >
 
        
@@ -2821,15 +3015,149 @@ function calcularTablasDeGrupos(partidos, predicciones) {
   const posiciones = {};
 
   Object.keys(tablas).forEach((grupo) => {
-    posiciones[grupo] = Object.values(tablas[grupo])
-      .map((equipo) => ({
+    posiciones[grupo] = ordenarTablaGrupo(
+      Object.values(tablas[grupo]).map((equipo) => ({
         ...equipo,
         dg: equipo.gf - equipo.gc
-      }))
-      .sort((a, b) => b.pts - a.pts);
+      })),
+      grupo,
+      partidosGrupo,
+      predicciones
+    );
   });
 
   return posiciones;
+}
+
+function ordenarTablaGrupo(tablaGrupo, grupo, partidosGrupo, predicciones) {
+  const ordenada = tablaGrupo
+    .slice()
+    .sort((a, b) => compararClasificacionGeneral(a, b));
+
+  const resultado = [];
+  let indice = 0;
+
+  while (indice < ordenada.length) {
+    const bloque = [ordenada[indice]];
+    indice += 1;
+
+    while (
+      indice < ordenada.length &&
+      tienenMismosCriteriosGenerales(bloque[0], ordenada[indice])
+    ) {
+      bloque.push(ordenada[indice]);
+      indice += 1;
+    }
+
+    if (bloque.length === 1) {
+      resultado.push(bloque[0]);
+      continue;
+    }
+
+    resultado.push(
+      ...ordenarEmpatePorEnfrentamientosDirectos(
+        bloque,
+        grupo,
+        partidosGrupo,
+        predicciones
+      )
+    );
+  }
+
+  return resultado;
+}
+
+function compararClasificacionGeneral(a, b) {
+  if (b.pts !== a.pts) return b.pts - a.pts;
+  if (b.dg !== a.dg) return b.dg - a.dg;
+  if (b.gf !== a.gf) return b.gf - a.gf;
+
+  return a.nombre.localeCompare(b.nombre);
+}
+
+function tienenMismosCriteriosGenerales(a, b) {
+  return a.pts === b.pts && a.dg === b.dg && a.gf === b.gf;
+}
+
+function ordenarEmpatePorEnfrentamientosDirectos(
+  equiposEmpatados,
+  grupo,
+  partidosGrupo,
+  predicciones
+) {
+  const nombresEmpatados = new Set(
+    equiposEmpatados.map((equipo) => equipo.nombre)
+  );
+
+  const metricas = {};
+
+  equiposEmpatados.forEach((equipo) => {
+    metricas[equipo.nombre] = {
+      pts: 0,
+      gf: 0,
+      gc: 0,
+      dg: 0
+    };
+  });
+
+  partidosGrupo
+    .filter((partido) => partido.grupo === grupo)
+    .forEach((partido) => {
+      if (
+        !nombresEmpatados.has(partido.equipoLocal) ||
+        !nombresEmpatados.has(partido.equipoVisitante)
+      ) {
+        return;
+      }
+
+      const prediccion = predicciones[partido.id];
+
+      if (!prediccion) return;
+      if (prediccion.golesLocal === null || prediccion.golesVisitante === null) return;
+      if (prediccion.golesLocal === undefined || prediccion.golesVisitante === undefined) return;
+
+      const golesLocal = Number(prediccion.golesLocal);
+      const golesVisitante = Number(prediccion.golesVisitante);
+
+      metricas[partido.equipoLocal].gf += golesLocal;
+      metricas[partido.equipoLocal].gc += golesVisitante;
+      metricas[partido.equipoVisitante].gf += golesVisitante;
+      metricas[partido.equipoVisitante].gc += golesLocal;
+
+      if (golesLocal > golesVisitante) {
+        metricas[partido.equipoLocal].pts += 3;
+      } else if (golesLocal < golesVisitante) {
+        metricas[partido.equipoVisitante].pts += 3;
+      } else {
+        metricas[partido.equipoLocal].pts += 1;
+        metricas[partido.equipoVisitante].pts += 1;
+      }
+    });
+
+  Object.values(metricas).forEach((metrica) => {
+    metrica.dg = metrica.gf - metrica.gc;
+  });
+
+  return equiposEmpatados
+    .slice()
+    .sort((a, b) => {
+      const metricaA = metricas[a.nombre];
+      const metricaB = metricas[b.nombre];
+
+      if (metricaB.pts !== metricaA.pts) {
+        return metricaB.pts - metricaA.pts;
+      }
+
+      if (metricaB.dg !== metricaA.dg) {
+        return metricaB.dg - metricaA.dg;
+      }
+
+      if (metricaB.gf !== metricaA.gf) {
+        return metricaB.gf - metricaA.gf;
+      }
+
+      return a.nombre.localeCompare(b.nombre);
+    });
 }
 
 function inicializarEquipoEnTabla(tablaGrupo, nombreEquipo) {
@@ -2964,7 +3292,13 @@ function resolverEquipoDesdePronostico(
 function obtenerGanadorPronosticado(partido, prediccion) {
   if (!prediccion) return null;
 
-  if (prediccion.equipoAvanza) {
+  if (
+    prediccion.equipoAvanza &&
+    (
+      prediccion.equipoAvanza === partido.equipoLocal ||
+      prediccion.equipoAvanza === partido.equipoVisitante
+    )
+  ) {
     return prediccion.equipoAvanza;
   }
 
@@ -3033,6 +3367,14 @@ function calcularAsignacionTerceros(partidos, mejoresTerceros) {
       });
     });
 
+  if (
+    !Array.isArray(mejoresTerceros) ||
+    mejoresTerceros.length !== 8 ||
+    espaciosTerceros.length === 0
+  ) {
+    return {};
+  }
+
   /*
     Primero resolvemos los espacios más restrictivos:
     aquellos que admiten menos grupos.
@@ -3045,6 +3387,7 @@ function calcularAsignacionTerceros(partidos, mejoresTerceros) {
 
   const asignaciones = {};
   const equiposUtilizados = new Set();
+  const gruposUtilizados = new Set();
 
   function intentarAsignar(indice) {
     if (indice >= espaciosTerceros.length) {
@@ -3056,13 +3399,15 @@ function calcularAsignacionTerceros(partidos, mejoresTerceros) {
     const candidatos = mejoresTerceros.filter((equipo) => {
       return (
         espacio.gruposPermitidos.includes(equipo.grupo) &&
-        !equiposUtilizados.has(equipo.nombre)
+        !equiposUtilizados.has(equipo.nombre) &&
+        !gruposUtilizados.has(equipo.grupo)
       );
     });
 
     for (const candidato of candidatos) {
       asignaciones[espacio.clave] = candidato.nombre;
       equiposUtilizados.add(candidato.nombre);
+      gruposUtilizados.add(candidato.grupo);
 
       if (intentarAsignar(indice + 1)) {
         return true;
@@ -3070,6 +3415,7 @@ function calcularAsignacionTerceros(partidos, mejoresTerceros) {
 
       delete asignaciones[espacio.clave];
       equiposUtilizados.delete(candidato.nombre);
+      gruposUtilizados.delete(candidato.grupo);
     }
 
     return false;
@@ -3078,13 +3424,33 @@ function calcularAsignacionTerceros(partidos, mejoresTerceros) {
   const asignacionCompleta = intentarAsignar(0);
 
   if (!asignacionCompleta) {
-    console.error(
-      "No fue posible distribuir los mejores terceros en todos los cruces.",
-      {
-        espaciosTerceros,
-        mejoresTerceros
+    const disponibles = mejoresTerceros.filter((equipo) => {
+      return (
+        !equiposUtilizados.has(equipo.nombre) &&
+        !gruposUtilizados.has(equipo.grupo)
+      );
+    });
+
+    espaciosTerceros.forEach((espacio) => {
+      if (asignaciones[espacio.clave]) {
+        return;
       }
-    );
+
+      const candidato = disponibles.find((equipo) => {
+        return espacio.gruposPermitidos.includes(equipo.grupo);
+      });
+
+      if (candidato) {
+        asignaciones[espacio.clave] = candidato.nombre;
+        equiposUtilizados.add(candidato.nombre);
+        gruposUtilizados.add(candidato.grupo);
+        disponibles.splice(disponibles.indexOf(candidato), 1);
+      }
+    });
+
+    if (Object.keys(asignaciones).length < espaciosTerceros.length) {
+      console.warn("No fue posible asignar todos los mejores terceros automáticamente; se dejarán los cruces sin resolver hasta completar los datos.");
+    }
   }
 
   return asignaciones;
@@ -3221,6 +3587,35 @@ function obtenerNombreEquipoDesdeInput(partidoId, tipo) {
   const elemento = document.querySelector(selector);
 
   return elemento ? elemento.textContent.trim() : null;
+}
+
+function obtenerPronosticosGruposGuardados() {
+  const pronosticosGrupos = {};
+
+  partidosGlobales
+    .filter(esFaseDeGrupos)
+    .forEach((partido) => {
+      const prediccion = prediccionesUsuario[partido.id];
+
+      if (!prediccion) {
+        return;
+      }
+
+      if (prediccion.golesLocal === null || prediccion.golesVisitante === null) {
+        return;
+      }
+
+      if (
+        prediccion.golesLocal === undefined ||
+        prediccion.golesVisitante === undefined
+      ) {
+        return;
+      }
+
+      pronosticosGrupos[partido.id] = prediccion;
+    });
+
+  return pronosticosGrupos;
 }
 
 
