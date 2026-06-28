@@ -109,6 +109,7 @@ const PUNTOS_MARCADOR_EXACTO = 2;
 
 const PUNTOS_CLASIFICADO = 1;
 const PUNTOS_POSICION_CLASIFICADO = 1;
+const SUMAR_CLASIFICACION_GRUPOS_AL_TOTAL = true;
 
 const PUNTOS_DIECISEISAVOS = 2;
 const PUNTOS_OCTAVOS = 3;
@@ -1049,6 +1050,14 @@ async function recalcularPuntajesUsuarios() {
           datosBracket = bracketSnap.data();
         }
       } catch (error) {
+        if (
+          error?.code === "permission-denied" ||
+          error?.message?.includes("permission") ||
+          error?.message?.includes("PERMISSION_DENIED")
+        ) {
+          throw error;
+        }
+
         console.warn(
           "No se pudieron cargar brackets para recalcular puntajes:",
           usuarioDoc.id,
@@ -1056,8 +1065,32 @@ async function recalcularPuntajesUsuarios() {
         );
       }
 
-      const partidosGruposUsuario = data.partidos || {};
-      const partidosBracketUsuario = datosBracket.partidos || {};
+      const partidosHistoricosUsuario = data.partidos || {};
+      const partidosGruposUsuario = {};
+      const partidosBracketHistoricosUsuario = {};
+
+      Object.entries(partidosHistoricosUsuario).forEach(
+        ([partidoId, prediccion]) => {
+          const partido = partidosGlobales.find(
+            (p) => p.id === partidoId
+          );
+
+          if (!partido) {
+            return;
+          }
+
+          if (esFaseDeGrupos(partido)) {
+            partidosGruposUsuario[partidoId] = prediccion;
+          } else {
+            partidosBracketHistoricosUsuario[partidoId] = prediccion;
+          }
+        }
+      );
+
+      const partidosBracketUsuario = {
+        ...partidosBracketHistoricosUsuario,
+        ...(datosBracket.partidos || {})
+      };
       const partidosUsuario = {
         ...partidosGruposUsuario,
         ...partidosBracketUsuario
@@ -1075,6 +1108,8 @@ async function recalcularPuntajesUsuarios() {
       let acertoGoleador = false;
 
       const partidosActualizados = {};
+      const partidosGruposActualizados = {};
+      const partidosBracketActualizados = {};
 
       Object.entries(partidosUsuario).forEach(
         ([partidoId, prediccion]) => {
@@ -1085,11 +1120,19 @@ async function recalcularPuntajesUsuarios() {
           const resultadoReal = resultadosOficiales[partidoId];
 
           if (!partido || !resultadoReal) {
-            partidosActualizados[partidoId] = {
+            const prediccionPendiente = {
               ...prediccion,
               estadoPuntuacion:
                 prediccion.estadoPuntuacion || "pendiente"
             };
+
+            partidosActualizados[partidoId] = prediccionPendiente;
+
+            if (partido && esFaseDeGrupos(partido)) {
+              partidosGruposActualizados[partidoId] = prediccionPendiente;
+            } else if (partido) {
+              partidosBracketActualizados[partidoId] = prediccionPendiente;
+            }
 
             return;
           }
@@ -1113,13 +1156,16 @@ async function recalcularPuntajesUsuarios() {
               aciertosResultado += 1;
             }
 
-            partidosActualizados[partidoId] = {
+            const prediccionPuntuada = {
               ...prediccion,
               resultadoRealLocal: resultadoReal.golesLocal,
               resultadoRealVisitante: resultadoReal.golesVisitante,
               puntos: puntuacion.puntos,
               estadoPuntuacion: puntuacion.estadoPuntuacion
             };
+
+            partidosActualizados[partidoId] = prediccionPuntuada;
+            partidosGruposActualizados[partidoId] = prediccionPuntuada;
 
             return;
           }
@@ -1142,11 +1188,14 @@ async function recalcularPuntajesUsuarios() {
               acertoSubcampeon = true;
             }
 
-            partidosActualizados[partidoId] = {
+            const prediccionFinalPuntuada = {
               ...prediccion,
               puntos: puntuacionFinal.puntos,
               estadoPuntuacion: "puntuado"
             };
+
+            partidosActualizados[partidoId] = prediccionFinalPuntuada;
+            partidosBracketActualizados[partidoId] = prediccionFinalPuntuada;
 
             return;
           }
@@ -1159,7 +1208,7 @@ async function recalcularPuntajesUsuarios() {
 
           puntosTotales += puntuacionEliminacion.puntos;
 
-          partidosActualizados[partidoId] = {
+          const prediccionEliminacionPuntuada = {
             ...prediccion,
             resultadoRealLocal: resultadoReal.golesLocal,
             resultadoRealVisitante: resultadoReal.golesVisitante,
@@ -1168,6 +1217,10 @@ async function recalcularPuntajesUsuarios() {
             estadoPuntuacion:
               puntuacionEliminacion.estadoPuntuacion
           };
+
+          partidosActualizados[partidoId] = prediccionEliminacionPuntuada;
+          partidosBracketActualizados[partidoId] =
+            prediccionEliminacionPuntuada;
         }
       );
 
@@ -1180,7 +1233,9 @@ async function recalcularPuntajesUsuarios() {
         partidosUsuario
       );
 
-      puntosTotales += clasificacion.puntosClasificacion;
+      if (SUMAR_CLASIFICACION_GRUPOS_AL_TOTAL) {
+        puntosTotales += clasificacion.puntosClasificacion;
+      }
       aciertosClasificados =
         clasificacion.aciertosClasificados;
 
@@ -1197,6 +1252,11 @@ async function recalcularPuntajesUsuarios() {
       await setDoc(
         doc(db, COLECCION_PREDICCIONES_GRUPOS, usuarioDoc.id),
         {
+          partidos: {
+            ...partidosHistoricosUsuario,
+            ...partidosGruposActualizados
+          },
+
           puntosTotales,
           aciertosExactos,
           aciertosResultado,
@@ -1214,6 +1274,33 @@ async function recalcularPuntajesUsuarios() {
           merge: true
         }
       );
+
+      if (
+        Object.keys(partidosBracketUsuario).length > 0 ||
+        Object.keys(partidosBracketActualizados).length > 0
+      ) {
+        await setDoc(
+          doc(db, COLECCION_PREDICCIONES_BRACKETS, usuarioDoc.id),
+          {
+            partidos: {
+              ...partidosBracketUsuario,
+              ...partidosBracketActualizados
+            },
+            puntosTotalesEliminacion: Object.values(
+              partidosBracketActualizados
+            ).reduce(
+              (total, prediccion) =>
+                total + (Number(prediccion.puntos) || 0),
+              0
+            ),
+            fechaPuntuacion: serverTimestamp(),
+            fechaActualizacion: serverTimestamp()
+          },
+          {
+            merge: true
+          }
+        );
+      }
 
       usuariosProcesados += 1;
     }
@@ -1271,6 +1358,7 @@ let prediccionesUsuario = {};
 let prediccionesGruposUsuario = {};
 let prediccionesBracketUsuario = {};
 let especialesUsuario = {};
+let temporizadorRecalculoBracket = null;
 
 const COLECCION_PREDICCIONES_GRUPOS = "prediccionesUsuarios";
 const COLECCION_PREDICCIONES_BRACKETS = "usuariosPrediccionesBrackets";
@@ -1290,6 +1378,21 @@ function tieneMarcadorGuardado(prediccion) {
     prediccion.golesLocal !== undefined &&
     prediccion.golesVisitante !== undefined
   );
+}
+
+function obtenerEquiposOriginalesDesdeSelector(partidoId) {
+  const selectAvanza = document.getElementById(`avanza-${partidoId}`);
+
+  return {
+    equipoLocal:
+      selectAvanza?.options?.[1]?.value ||
+      obtenerNombreEquipoDesdeInput(partidoId, "local") ||
+      "",
+    equipoVisitante:
+      selectAvanza?.options?.[2]?.value ||
+      obtenerNombreEquipoDesdeInput(partidoId, "visitante") ||
+      ""
+  };
 }
 
 // =====================================================
@@ -1624,41 +1727,6 @@ if (false && btnRecalcularBracket) {
   });
 }
 
-if (btnRecalcularBracket) {
-  btnRecalcularBracket.addEventListener("click", () => {
-    const pronosticosEliminacion = recolectarPronosticosPartidos();
-
-    if (!pronosticosEliminacion) {
-      return;
-    }
-
-    prediccionesBracketUsuario = {
-      ...prediccionesBracketUsuario,
-      ...pronosticosEliminacion
-    };
-
-    sincronizarPrediccionesUsuario();
-
-    const partidosCalculados = calcularPartidosConPronosticos(
-      partidosGlobales,
-      {
-        ...prediccionesBracketUsuario,
-        ...obtenerPrediccionesParaLlavesReales()
-      }
-    );
-
-    const partidosEliminacion = partidosCalculados.filter(
-      (partido) => !esFaseDeGrupos(partido)
-    );
-
-    renderizarBracketEliminacion(partidosEliminacion);
-    renderizarPronosticosEspeciales();
-
-    estadoGuardadoGlobal.textContent =
-      "Llaves recalculadas con resultados oficiales y tus pronosticos actuales de eliminacion. Revisa las fases siguientes y guarda eliminacion directa.";
-  });
-}
-
 btnRegistroEmail.addEventListener("click", async () => {
   const nombre = nombreRegistro.value.trim();
   const email = emailRegistro.value.trim().toLowerCase();
@@ -1833,6 +1901,43 @@ btnVerificarEstado.addEventListener("click", async () => {
 });
 
 btnGuardarTodo.addEventListener("click", guardarTodosLosPronosticos);
+
+if (bracketContainer) {
+  bracketContainer.addEventListener("input", (event) => {
+    const objetivo = event.target;
+
+    if (!objetivo?.id) {
+      return;
+    }
+
+    const coincidencia = objetivo.id.match(
+      /^(local|visitante)-(.+)$/
+    );
+
+    if (!coincidencia) {
+      return;
+    }
+
+    programarRecalculoBracketTemporal(coincidencia[2], objetivo.id);
+  });
+
+  bracketContainer.addEventListener("change", (event) => {
+    const objetivo = event.target;
+
+    if (!objetivo?.id) {
+      return;
+    }
+
+    const coincidencia = objetivo.id.match(/^avanza-(.+)$/);
+
+    if (!coincidencia) {
+      return;
+    }
+
+    programarRecalculoBracketTemporal(coincidencia[1], objetivo.id);
+  });
+}
+
 if (btnActualizarAdmin) {
   btnActualizarAdmin.addEventListener("click", cargarPanelAdministracion);
 }
@@ -2933,6 +3038,11 @@ function recolectarPronosticosPartidos() {
       obtenerNombreEquipoDesdeInput(partido.id, "visitante") || partido.equipoVisitante;
 
     const equipoAvanza = selectAvanza ? selectAvanza.value : "";
+    const equiposOriginales = obtenerEquiposOriginalesDesdeSelector(partido.id);
+    const equipoLocalOriginal =
+      equiposOriginales.equipoLocal || equipoLocalMostrado;
+    const equipoVisitanteOriginal =
+      equiposOriginales.equipoVisitante || equipoVisitanteMostrado;
 
     // Si es eliminación directa y el marcador está empatado, debe elegir quién avanza.
     if (esEliminacion && golesLocal === golesVisitante && !equipoAvanza) {
@@ -2949,9 +3059,9 @@ function recolectarPronosticosPartidos() {
       if (equipoAvanza) {
         equipoAvanzaFinal = equipoAvanza;
       } else if (golesLocal > golesVisitante) {
-        equipoAvanzaFinal = equipoLocalMostrado;
+        equipoAvanzaFinal = equipoLocalOriginal;
       } else if (golesVisitante > golesLocal) {
-        equipoAvanzaFinal = equipoVisitanteMostrado;
+        equipoAvanzaFinal = equipoVisitanteOriginal;
       }
     }
 
@@ -2981,8 +3091,8 @@ function recolectarPronosticosPartidos() {
       fase: partido.fase,
       grupo: partido.grupo || null,
 
-      equipoLocal: equipoLocalMostrado,
-      equipoVisitante: equipoVisitanteMostrado,
+      equipoLocal: equipoLocalOriginal,
+      equipoVisitante: equipoVisitanteOriginal,
       equipoLocalMostrado: equipoLocalMostrado,
       equipoVisitanteMostrado: equipoVisitanteMostrado,
 
@@ -3002,6 +3112,130 @@ function recolectarPronosticosPartidos() {
   }
 
   return pronosticos;
+}
+
+function actualizarPronosticoTemporalEliminacion(partidoId) {
+  const partido = partidosGlobales.find((p) => p.id === partidoId);
+
+  if (!partido || esFaseDeGrupos(partido)) {
+    return false;
+  }
+
+  const inputLocal = document.getElementById(`local-${partidoId}`);
+  const inputVisitante = document.getElementById(`visitante-${partidoId}`);
+  const selectAvanza = document.getElementById(`avanza-${partidoId}`);
+
+  if (!inputLocal || !inputVisitante) {
+    return false;
+  }
+
+  const golesLocalTexto = inputLocal.value.trim();
+  const golesVisitanteTexto = inputVisitante.value.trim();
+  const equiposOriginales = obtenerEquiposOriginalesDesdeSelector(partidoId);
+  const equipoLocalMostrado =
+    obtenerNombreEquipoDesdeInput(partidoId, "local") ||
+    equiposOriginales.equipoLocal ||
+    partido.equipoLocal;
+  const equipoVisitanteMostrado =
+    obtenerNombreEquipoDesdeInput(partidoId, "visitante") ||
+    equiposOriginales.equipoVisitante ||
+    partido.equipoVisitante;
+  const equipoLocalOriginal =
+    equiposOriginales.equipoLocal || equipoLocalMostrado;
+  const equipoVisitanteOriginal =
+    equiposOriginales.equipoVisitante || equipoVisitanteMostrado;
+
+  if (golesLocalTexto === "" && golesVisitanteTexto === "") {
+    delete prediccionesBracketUsuario[partidoId];
+    sincronizarPrediccionesUsuario();
+    return true;
+  }
+
+  if (golesLocalTexto === "" || golesVisitanteTexto === "") {
+    return false;
+  }
+
+  const golesLocal = Number(golesLocalTexto);
+  const golesVisitante = Number(golesVisitanteTexto);
+
+  if (
+    Number.isNaN(golesLocal) ||
+    Number.isNaN(golesVisitante) ||
+    golesLocal < 0 ||
+    golesVisitante < 0
+  ) {
+    return false;
+  }
+
+  const equipoAvanzaSeleccionado = selectAvanza ? selectAvanza.value : "";
+  let equipoAvanzaFinal = equipoAvanzaSeleccionado || null;
+
+  if (!equipoAvanzaFinal) {
+    if (golesLocal > golesVisitante) {
+      equipoAvanzaFinal = equipoLocalOriginal;
+    } else if (golesVisitante > golesLocal) {
+      equipoAvanzaFinal = equipoVisitanteOriginal;
+    }
+  }
+
+  prediccionesBracketUsuario[partidoId] = {
+    partidoId: partido.id,
+    numero: partido.numero,
+    fase: partido.fase,
+    grupo: partido.grupo || null,
+    equipoLocal: equipoLocalOriginal,
+    equipoVisitante: equipoVisitanteOriginal,
+    equipoLocalMostrado,
+    equipoVisitanteMostrado,
+    golesLocal,
+    golesVisitante,
+    equipoAvanza: equipoAvanzaFinal,
+    puntos: prediccionesBracketUsuario[partidoId]?.puntos || 0,
+    estadoPuntuacion:
+      prediccionesBracketUsuario[partidoId]?.estadoPuntuacion || "pendiente"
+  };
+
+  sincronizarPrediccionesUsuario();
+  return true;
+}
+
+function recalcularBracketConMemoriaTemporal(focusId = "") {
+  const partidosCalculados = calcularPartidosConPronosticos(
+    partidosGlobales,
+    {
+      ...prediccionesBracketUsuario,
+      ...obtenerPrediccionesParaLlavesReales()
+    }
+  );
+
+  const partidosEliminacion = partidosCalculados.filter(
+    (partido) => !esFaseDeGrupos(partido)
+  );
+
+  renderizarBracketEliminacion(partidosEliminacion);
+  renderizarPronosticosEspeciales();
+
+  if (focusId) {
+    const elemento = document.getElementById(focusId);
+
+    if (elemento) {
+      elemento.focus();
+    }
+  }
+}
+
+function programarRecalculoBracketTemporal(partidoId, focusId = "") {
+  if (!actualizarPronosticoTemporalEliminacion(partidoId)) {
+    return;
+  }
+
+  clearTimeout(temporizadorRecalculoBracket);
+
+  temporizadorRecalculoBracket = setTimeout(() => {
+    recalcularBracketConMemoriaTemporal(focusId);
+    estadoGuardadoGlobal.textContent =
+      "Llaves actualizadas en memoria temporal. Presiona guardar para persistir tus pronosticos de eliminacion.";
+  }, 250);
 }
 
 
@@ -3705,6 +3939,17 @@ function resolverEquipoDesdePronostico(
 
 function obtenerGanadorPronosticado(partido, prediccion) {
   if (!prediccion) return null;
+
+  if (
+    prediccion.equipoLocal &&
+    prediccion.equipoVisitante &&
+    (
+      prediccion.equipoLocal !== partido.equipoLocal ||
+      prediccion.equipoVisitante !== partido.equipoVisitante
+    )
+  ) {
+    return null;
+  }
 
   if (
     prediccion.equipoAvanza &&
