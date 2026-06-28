@@ -35,5 +35,11 @@ service cloud.firestore {
       allow create, update: if isOwner(userId) || isAdmin();
       allow delete: if false;
     }
+
+    match /usuariosPrediccionesBrackets/{userId} {
+      allow read: if isSignedIn();
+      allow create, update: if isOwner(userId) || isAdmin();
+      allow delete: if false;
+    }
   }
 }
