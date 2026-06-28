@@ -1246,8 +1246,13 @@ botonesTabs.forEach((boton) => {
 
     boton.classList.add("active");
     tabDestino.classList.add("active");
+    actualizarVisibilidadGuardadoEliminacion(tabId);
   });
 });
+
+actualizarVisibilidadGuardadoEliminacion(
+  document.querySelector(".tab-btn.active")?.dataset.tab || ""
+);
 
 
 let usuarioActual = null;
@@ -1341,6 +1346,19 @@ function deshabilitarBotonGuardadoTemporalmente() {
     estadoGuardadoGlobal.textContent =
       "Los pronósticos de fase de grupos se cerraron porque los partidos ya iniciaron. El botón se habilitará nuevamente cuando termine la fase de grupos para completar los pronósticos de eliminación directa.";
   }
+}
+
+function actualizarVisibilidadGuardadoEliminacion(tabActivaId = "") {
+  const panelGuardado = btnGuardarTodo?.closest(".guardar-global-panel");
+
+  if (!panelGuardado) {
+    return;
+  }
+
+  panelGuardado.classList.toggle(
+    "hidden",
+    tabActivaId !== "tab-eliminacion"
+  );
 }
 
 
