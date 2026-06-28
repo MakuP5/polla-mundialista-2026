@@ -1362,6 +1362,9 @@ let temporizadorRecalculoBracket = null;
 
 const COLECCION_PREDICCIONES_GRUPOS = "prediccionesUsuarios";
 const COLECCION_PREDICCIONES_BRACKETS = "usuariosPrediccionesBrackets";
+const PARTIDOS_ELIMINACION_CERRADOS = new Set([
+  "partido-073"
+]);
 
 function sincronizarPrediccionesUsuario() {
   prediccionesUsuario = {
@@ -1378,6 +1381,10 @@ function tieneMarcadorGuardado(prediccion) {
     prediccion.golesLocal !== undefined &&
     prediccion.golesVisitante !== undefined
   );
+}
+
+function estaPartidoCerradoParaPronostico(partido) {
+  return PARTIDOS_ELIMINACION_CERRADOS.has(partido?.id);
 }
 
 function obtenerEquiposOriginalesDesdeSelector(partidoId) {
@@ -2994,6 +3001,10 @@ function recolectarPronosticosPartidos() {
       return;
     }
 
+    if (estaPartidoCerradoParaPronostico(partido)) {
+      return;
+    }
+
     const inputLocal = document.getElementById(`local-${partido.id}`);
     const inputVisitante = document.getElementById(`visitante-${partido.id}`);
     const selectAvanza = document.getElementById(`avanza-${partido.id}`);
@@ -3118,6 +3129,10 @@ function actualizarPronosticoTemporalEliminacion(partidoId) {
   const partido = partidosGlobales.find((p) => p.id === partidoId);
 
   if (!partido || esFaseDeGrupos(partido)) {
+    return false;
+  }
+
+  if (estaPartidoCerradoParaPronostico(partido)) {
     return false;
   }
 
@@ -3483,6 +3498,7 @@ function crearTarjetaPartido(partido, modoBracket = false) {
 
   const prediccionGuardada = prediccionesUsuario[partido.id];
   const esEliminacion = !esFaseDeGrupos(partido);
+  const partidoCerrado = estaPartidoCerradoParaPronostico(partido);
   const prediccionCoincideConEquipos =
     !prediccionGuardada ||
     !esEliminacion ||
@@ -3505,7 +3521,9 @@ function crearTarjetaPartido(partido, modoBracket = false) {
 
   const estadoGuardado = mostrarPrediccionGuardada
     ? `<span class="estado-guardado">Guardado</span>`
-    : `<span class="estado-pendiente">Sin guardar</span>`;
+    : partidoCerrado
+      ? `<span class="estado-pendiente">Cerrado</span>`
+      : `<span class="estado-pendiente">Sin guardar</span>`;
 
   const grupoTexto = partido.grupo
     ? `<p><strong>Grupo:</strong> ${partido.grupo}</p>`
@@ -3531,7 +3549,7 @@ function crearTarjetaPartido(partido, modoBracket = false) {
     `;
 
 const claseFinal = partido.numero === 104 ? "partido-final" : "";
-  const camposBloqueados = !esEliminacion;
+  const camposBloqueados = !esEliminacion || partidoCerrado;
   const atributoBloqueado = camposBloqueados ? "disabled" : "";
 const equipoAvanzaGuardado =
   prediccionGuardada && prediccionCoincideConEquipos
@@ -3548,7 +3566,7 @@ const selectorAvanza = esEliminacion
   ? `
     <div class="selector-avanza">
       <label for="avanza-${partido.id}">${etiquetaSelectorGanador}</label>
-      <select id="avanza-${partido.id}">
+      <select id="avanza-${partido.id}" ${atributoBloqueado}>
         <option value="">Selecciona</option>
         <option value="${partido.equipoLocal}" ${equipoAvanzaGuardado === partido.equipoLocal ? "selected" : ""}>
           ${local.nombre}
