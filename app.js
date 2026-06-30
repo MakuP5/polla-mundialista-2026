@@ -1582,7 +1582,7 @@ function esUsuarioAdministrador(user) {
 // BLOQUEO TEMPORAL DEL BOTÓN DE GUARDADO
 // =====================================================
 
-const GUARDADO_TEMPORALMENTE_CERRADO = false;
+const GUARDADO_TEMPORALMENTE_CERRADO = true;
 
 // =====================================================
 // BLOQUEO TEMPORAL DEL BOTÓN DE GUARDADO
@@ -1608,10 +1608,29 @@ function deshabilitarBotonGuardadoTemporalmente() {
   if (GUARDADO_TEMPORALMENTE_CERRADO) {
     btnGuardarTodo.disabled = true;
     btnGuardarTodo.classList.add("btn-guardar-bloqueado");
-    btnGuardarTodo.textContent = "🔒 Pronósticos cerrados temporalmente";
+    btnGuardarTodo.textContent = "Pronosticos cerrados";
 
     estadoGuardadoGlobal.textContent =
-      "Los pronósticos de fase de grupos se cerraron porque los partidos ya iniciaron. El botón se habilitará nuevamente cuando termine la fase de grupos para completar los pronósticos de eliminación directa.";
+      "Los pronosticos de eliminacion y especiales estan cerrados. No se pueden guardar cambios.";
+  }
+}
+
+function bloquearPronosticosEspecialesTemporalmente() {
+  if (!GUARDADO_TEMPORALMENTE_CERRADO) {
+    return;
+  }
+
+  [especialGoleador, especialMejorJugador].forEach((campo) => {
+    if (campo) {
+      campo.disabled = true;
+      campo.classList.add("campo-bloqueado");
+    }
+  });
+
+  if (estadoEspeciales) {
+    estadoEspeciales.textContent = "Cerrado";
+    estadoEspeciales.classList.remove("estado-guardado");
+    estadoEspeciales.classList.add("estado-pendiente");
   }
 }
 
@@ -2096,6 +2115,7 @@ if (btnActualizarAdmin) {
   btnActualizarAdmin.addEventListener("click", cargarPanelAdministracion);
 }
 deshabilitarBotonGuardadoTemporalmente();
+bloquearPronosticosEspecialesTemporalmente();
 
 if (btnRecalcularPuntajes) {
   btnRecalcularPuntajes.addEventListener("click", recalcularPuntajesUsuarios);
@@ -2430,8 +2450,8 @@ async function cargarPartidos() {
     await cargarPrediccionesUsuario();
 
     const prediccionesParaLlaves = {
-      ...prediccionesBracketUsuario,
-      ...obtenerPrediccionesParaLlavesReales()
+      ...obtenerPrediccionesParaLlavesReales(),
+      ...prediccionesBracketUsuario
     };
 
     const partidosCalculados = calcularPartidosConPronosticos(
@@ -3365,8 +3385,8 @@ function recalcularBracketConMemoriaTemporal(focusId = "") {
   const partidosCalculados = calcularPartidosConPronosticos(
     partidosGlobales,
     {
-      ...prediccionesBracketUsuario,
-      ...obtenerPrediccionesParaLlavesReales()
+      ...obtenerPrediccionesParaLlavesReales(),
+      ...prediccionesBracketUsuario
     }
   );
 
@@ -3476,6 +3496,11 @@ async function guardarTodosLosPronosticosLegacy() {
 }
 
 async function guardarTodosLosPronosticos() {
+  if (GUARDADO_TEMPORALMENTE_CERRADO) {
+    alert("Los pronosticos de eliminacion y especiales estan cerrados.");
+    return;
+  }
+
   if (!usuarioActual) {
     alert("Primero debes iniciar sesion.");
     return;
@@ -4478,6 +4503,8 @@ function renderizarPronosticosEspeciales() {
       estadoEspeciales.classList.add("estado-pendiente");
     }
   }
+
+  bloquearPronosticosEspecialesTemporalmente();
 }
 
 function recolectarPronosticosEspeciales() {
