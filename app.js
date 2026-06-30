@@ -2450,8 +2450,8 @@ async function cargarPartidos() {
     await cargarPrediccionesUsuario();
 
     const prediccionesParaLlaves = {
-      ...prediccionesBracketUsuario,
-      ...obtenerPrediccionesParaLlavesReales()
+      ...obtenerPrediccionesParaLlavesReales(),
+      ...prediccionesBracketUsuario
     };
 
     const partidosCalculados = calcularPartidosConPronosticos(
@@ -3385,8 +3385,8 @@ function recalcularBracketConMemoriaTemporal(focusId = "") {
   const partidosCalculados = calcularPartidosConPronosticos(
     partidosGlobales,
     {
-      ...prediccionesBracketUsuario,
-      ...obtenerPrediccionesParaLlavesReales()
+      ...obtenerPrediccionesParaLlavesReales(),
+      ...prediccionesBracketUsuario
     }
   );
 
