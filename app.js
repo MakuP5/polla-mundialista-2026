@@ -1363,8 +1363,9 @@ let temporizadorRecalculoBracket = null;
 const COLECCION_PREDICCIONES_GRUPOS = "prediccionesUsuarios";
 const COLECCION_PREDICCIONES_BRACKETS = "usuariosPrediccionesBrackets";
 const PARTIDOS_ELIMINACION_CERRADOS = new Set([
-  "partido-073", "partido-074", "partido-075", "partido-076", "partido-077", "partido-078", "partido-079", "partido-080",
-  "partido-081", "partido-082", "partido-083", "partido-084", "partido-085", "partido-086", "partido-087", "partido-088"
+  "partido-073", "partido-074", "partido-075", "partido-076"
+  //, "partido-077", "partido-078", "partido-079", "partido-080",
+  //"partido-081", "partido-082", "partido-083", "partido-084", "partido-085", "partido-086", "partido-087", "partido-088"
   //"partido-089", "partido-090", "partido-091", "partido-092", "partido-093", "partido-094", "partido-095", "partido-096",
   //"partido-097", "partido-098", "partido-099", "partido-100", "partido-101", "partido-102", "partido-103", "partido-104"
 ]);
