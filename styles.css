@@ -1025,6 +1025,15 @@ button {
   color: #ffffff;
 }
 
+.especial-campo input.campo-bloqueado,
+.especial-campo input:disabled {
+  background: #24344a;
+  border-color: #64748b;
+  color: #dbeafe;
+  cursor: not-allowed;
+  opacity: 0.85;
+}
+
 .especial-campo input::placeholder {
   color: #9fb6ce;
 }
