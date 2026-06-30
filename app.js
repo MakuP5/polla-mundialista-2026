@@ -493,6 +493,38 @@ const resultadosOficiales = {
   "partido-072": {
     golesLocal: 3,
     golesVisitante: 1
+  },
+
+  "partido-073": {
+    golesLocal: 0,
+    golesVisitante: 1,
+    equipoAvanza: "Canada",
+    definicion: "tiempo_reglamentario"
+  },
+
+  "partido-074": {
+    golesLocal: 1,
+    golesVisitante: 1,
+    penalesLocal: 3,
+    penalesVisitante: 4,
+    equipoAvanza: "Paraguay",
+    definicion: "penales"
+  },
+
+  "partido-075": {
+    golesLocal: 1,
+    golesVisitante: 1,
+    penalesLocal: 2,
+    penalesVisitante: 3,
+    equipoAvanza: "Morocco",
+    definicion: "penales"
+  },
+
+  "partido-076": {
+    golesLocal: 2,
+    golesVisitante: 1,
+    equipoAvanza: "Brazil",
+    definicion: "tiempo_reglamentario"
   }
 
   
@@ -500,7 +532,7 @@ const resultadosOficiales = {
 };
 
 const RESULTADOS_OFICIALES_ULTIMA_ACTUALIZACION =
-  "24 de junio de 2026, 11:04 (UTC-5)";
+  "30 de junio de 2026, 00:00 (UTC-5)";
 
 function formatearFechaHoraActualizacion(fecha = new Date()) {
   return new Intl.DateTimeFormat("es-EC", {
@@ -867,6 +899,13 @@ function estanTodosResultadosGruposCargados() {
 }
 
 function calcularPuntosEliminacion(prediccion, resultadoReal, partido) {
+    if (esRellenoSinPuntos(prediccion)) {
+      return {
+        puntos: 0,
+        estadoPuntuacion: "relleno_sin_puntos"
+      };
+    }
+
     if (!prediccion || !resultadoReal || !partido) {
       return {
         puntos: 0,
@@ -906,6 +945,14 @@ function calcularPuntosFinal(prediccionFinal, resultadoFinal) {
     let puntos = 0;
     let acertoCampeon = false;
     let acertoSubcampeon = false;
+
+    if (esRellenoSinPuntos(prediccionFinal)) {
+      return {
+        puntos,
+        acertoCampeon,
+        acertoSubcampeon
+      };
+    }
   
     if (!prediccionFinal || !resultadoFinal) {
       return {
@@ -1087,10 +1134,10 @@ async function recalcularPuntajesUsuarios() {
         }
       );
 
-      const partidosBracketUsuario = {
+      const partidosBracketUsuario = completarPartidosCerradosSinPuntos({
         ...partidosBracketHistoricosUsuario,
         ...(datosBracket.partidos || {})
-      };
+      });
       const partidosUsuario = {
         ...partidosGruposUsuario,
         ...partidosBracketUsuario
@@ -1132,6 +1179,28 @@ async function recalcularPuntajesUsuarios() {
               partidosGruposActualizados[partidoId] = prediccionPendiente;
             } else if (partido) {
               partidosBracketActualizados[partidoId] = prediccionPendiente;
+            }
+
+            return;
+          }
+
+          if (esRellenoSinPuntos(prediccion)) {
+            const prediccionRellenada = {
+              ...prediccion,
+              resultadoRealLocal: resultadoReal.golesLocal,
+              resultadoRealVisitante: resultadoReal.golesVisitante,
+              equipoAvanzaOficial: resultadoReal.equipoAvanza || prediccion.equipoAvanza || null,
+              puntos: 0,
+              estadoPuntuacion: "relleno_sin_puntos",
+              rellenoSinPuntos: true
+            };
+
+            partidosActualizados[partidoId] = prediccionRellenada;
+
+            if (esFaseDeGrupos(partido)) {
+              partidosGruposActualizados[partidoId] = prediccionRellenada;
+            } else {
+              partidosBracketActualizados[partidoId] = prediccionRellenada;
             }
 
             return;
@@ -1389,6 +1458,80 @@ function tieneMarcadorGuardado(prediccion) {
 
 function estaPartidoCerradoParaPronostico(partido) {
   return PARTIDOS_ELIMINACION_CERRADOS.has(partido?.id);
+}
+
+function esRellenoSinPuntos(prediccion) {
+  return prediccion?.rellenoSinPuntos === true;
+}
+
+function debeRellenarseSinPuntos(partido, prediccion) {
+  return (
+    partido &&
+    !esFaseDeGrupos(partido) &&
+    estaPartidoCerradoParaPronostico(partido) &&
+    resultadosOficiales[partido.id] &&
+    !tieneMarcadorGuardado(prediccion)
+  );
+}
+
+function crearPronosticoRellenoSinPuntos(partido) {
+  const resultadoReal = resultadosOficiales[partido.id];
+
+  if (!resultadoReal) {
+    return null;
+  }
+
+  let equipoAvanza = resultadoReal.equipoAvanza || null;
+
+  if (!equipoAvanza && resultadoReal.golesLocal > resultadoReal.golesVisitante) {
+    equipoAvanza = partido.equipoLocal;
+  } else if (
+    !equipoAvanza &&
+    resultadoReal.golesVisitante > resultadoReal.golesLocal
+  ) {
+    equipoAvanza = partido.equipoVisitante;
+  }
+
+  return {
+    partidoId: partido.id,
+    numero: partido.numero,
+    fase: partido.fase,
+    grupo: partido.grupo || null,
+    equipoLocal: partido.equipoLocal,
+    equipoVisitante: partido.equipoVisitante,
+    equipoLocalMostrado: partido.equipoLocal,
+    equipoVisitanteMostrado: partido.equipoVisitante,
+    golesLocal: Number(resultadoReal.golesLocal),
+    golesVisitante: Number(resultadoReal.golesVisitante),
+    equipoAvanza,
+    resultadoRealLocal: Number(resultadoReal.golesLocal),
+    resultadoRealVisitante: Number(resultadoReal.golesVisitante),
+    equipoAvanzaOficial: resultadoReal.equipoAvanza || equipoAvanza,
+    puntos: 0,
+    estadoPuntuacion: "relleno_sin_puntos",
+    rellenoSinPuntos: true
+  };
+}
+
+function completarPartidosCerradosSinPuntos(prediccionesBase = {}) {
+  const prediccionesCompletadas = {
+    ...prediccionesBase
+  };
+
+  partidosGlobales
+    .filter((partido) => debeRellenarseSinPuntos(
+      partido,
+      prediccionesCompletadas[partido.id]
+    ))
+    .forEach((partido) => {
+      const relleno = crearPronosticoRellenoSinPuntos(partido);
+
+      if (relleno) {
+        prediccionesCompletadas[partido.id] = relleno;
+      }
+    });
+
+  return prediccionesCompletadas;
 }
 
 function obtenerEquiposOriginalesDesdeSelector(partidoId) {
@@ -3357,10 +3500,10 @@ async function guardarTodosLosPronosticos() {
     return;
   }
 
-  const pronosticosBracket = {
+  const pronosticosBracket = completarPartidosCerradosSinPuntos({
     ...prediccionesBracketUsuario,
     ...pronosticosPantalla
-  };
+  });
 
   const especiales = recolectarPronosticosEspeciales();
 
@@ -3500,9 +3643,14 @@ function crearTarjetaPartido(partido, modoBracket = false) {
   const local = obtenerSeleccion(partido.equipoLocal);
   const visitante = obtenerSeleccion(partido.equipoVisitante);
 
-  const prediccionGuardada = prediccionesUsuario[partido.id];
+  let prediccionGuardada = prediccionesUsuario[partido.id];
   const esEliminacion = !esFaseDeGrupos(partido);
   const partidoCerrado = estaPartidoCerradoParaPronostico(partido);
+
+  if (debeRellenarseSinPuntos(partido, prediccionGuardada)) {
+    prediccionGuardada = crearPronosticoRellenoSinPuntos(partido);
+  }
+
   const prediccionCoincideConEquipos =
     !prediccionGuardada ||
     !esEliminacion ||
@@ -3524,7 +3672,9 @@ function crearTarjetaPartido(partido, modoBracket = false) {
       : "";
 
   const estadoGuardado = mostrarPrediccionGuardada
-    ? `<span class="estado-guardado">Guardado</span>`
+    ? esRellenoSinPuntos(prediccionGuardada)
+      ? `<span class="estado-pendiente">Resultado oficial sin puntos</span>`
+      : `<span class="estado-guardado">Guardado</span>`
     : partidoCerrado
       ? `<span class="estado-pendiente">Cerrado</span>`
       : `<span class="estado-pendiente">Sin guardar</span>`;
